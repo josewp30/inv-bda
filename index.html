@@ -1,0 +1,1660 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <meta name="theme-color" content="#0f172a" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="InvControl" />
+  <title>InvControl — Inventario Físico</title>
+  <link rel="manifest" href="manifest.json" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=DM+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+  <style>
+    /* ── DESIGN TOKENS ── */
+    :root {
+      --bg:         #0a0f1e;
+      --bg-surface: #111827;
+      --bg-card:    #1a2235;
+      --bg-hover:   #1e2d45;
+      --border:     #1e3a5f;
+      --border-lit: #2563eb;
+      --accent:     #3b82f6;
+      --accent-glow:#1d4ed8;
+      --accent2:    #06b6d4;
+      --danger:     #ef4444;
+      --success:    #22c55e;
+      --warn:       #f59e0b;
+      --text:       #e2e8f0;
+      --text-muted: #64748b;
+      --text-dim:   #94a3b8;
+      --mono:       'Space Mono', monospace;
+      --sans:       'DM Sans', sans-serif;
+      --r-sm:       8px;
+      --r-md:       12px;
+      --r-lg:       16px;
+      --shadow:     0 4px 24px rgba(0,0,0,0.5);
+      --glow:       0 0 20px rgba(59,130,246,0.3);
+    }
+
+    /* ── RESET ── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body { height: 100%; font-family: var(--sans); background: var(--bg); color: var(--text); overflow: hidden; }
+    button { cursor: pointer; font-family: inherit; border: none; outline: none; }
+    input, select, textarea { font-family: inherit; outline: none; border: none; }
+    ul { list-style: none; }
+
+    /* ── APP SHELL ── */
+    #app { height: 100dvh; display: flex; flex-direction: column; position: relative; overflow: hidden; }
+
+    /* ── GRID BACKGROUND ── */
+    #app::before {
+      content: '';
+      position: fixed; inset: 0;
+      background-image:
+        linear-gradient(rgba(59,130,246,0.04) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(59,130,246,0.04) 1px, transparent 1px);
+      background-size: 32px 32px;
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    /* ── TOPBAR ── */
+    #topbar {
+      position: relative; z-index: 10;
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 12px 16px;
+      background: rgba(10,15,30,0.9);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--border);
+    }
+    #topbar .brand {
+      display: flex; align-items: center; gap: 10px;
+    }
+    #topbar .brand-icon {
+      width: 34px; height: 34px;
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      border-radius: var(--r-sm);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 16px;
+      box-shadow: var(--glow);
+    }
+    #topbar .brand-name {
+      font-family: var(--mono);
+      font-size: 15px; font-weight: 700;
+      letter-spacing: -0.5px;
+      color: var(--text);
+    }
+    #topbar .brand-name span { color: var(--accent); }
+    #topbar .right { display: flex; align-items: center; gap: 8px; }
+    .badge-role {
+      font-family: var(--mono); font-size: 10px;
+      padding: 3px 8px; border-radius: 99px;
+      border: 1px solid var(--border-lit);
+      color: var(--accent); background: rgba(59,130,246,0.08);
+      letter-spacing: 1px; text-transform: uppercase;
+    }
+    .badge-role.operator { border-color: var(--accent2); color: var(--accent2); background: rgba(6,182,212,0.08); }
+    .icon-btn {
+      width: 34px; height: 34px;
+      background: var(--bg-card); border: 1px solid var(--border);
+      border-radius: var(--r-sm); color: var(--text-dim);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 14px; transition: all .2s;
+    }
+    .icon-btn:hover { border-color: var(--accent); color: var(--accent); }
+
+    /* ── MAIN CONTENT ── */
+    #main {
+      flex: 1; overflow-y: auto; overflow-x: hidden;
+      position: relative; z-index: 1;
+      padding-bottom: 80px;
+    }
+    #main::-webkit-scrollbar { width: 3px; }
+    #main::-webkit-scrollbar-thumb { background: var(--border); border-radius: 99px; }
+
+    /* ── BOTTOM NAV ── */
+    #bottom-nav {
+      position: fixed; bottom: 0; left: 0; right: 0;
+      z-index: 10;
+      display: flex; align-items: center;
+      background: rgba(10,15,30,0.95);
+      backdrop-filter: blur(16px);
+      border-top: 1px solid var(--border);
+      padding: 8px 0 max(8px, env(safe-area-inset-bottom));
+    }
+    .nav-item {
+      flex: 1; display: flex; flex-direction: column; align-items: center;
+      gap: 3px; padding: 6px 4px;
+      color: var(--text-muted); font-size: 10px; font-weight: 500;
+      letter-spacing: 0.3px; text-transform: uppercase;
+      transition: color .2s; background: none;
+    }
+    .nav-item .nav-icon { font-size: 20px; transition: transform .2s; }
+    .nav-item.active { color: var(--accent); }
+    .nav-item.active .nav-icon { transform: scale(1.15); }
+    .nav-item.hidden { display: none !important; }
+
+    /* ── SCREENS ── */
+    .screen { display: none; padding: 16px; animation: fadeIn .25s ease; }
+    .screen.active { display: block; }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
+
+    /* ── LOGIN SCREEN ── */
+    #screen-login {
+      display: flex; flex-direction: column;
+      justify-content: center; align-items: center;
+      min-height: 100%; padding: 24px;
+    }
+    #screen-login.active { display: flex; }
+    .login-logo {
+      width: 80px; height: 80px;
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      border-radius: 20px; margin-bottom: 24px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 36px; box-shadow: var(--glow);
+      animation: pulse-logo 3s ease-in-out infinite;
+    }
+    @keyframes pulse-logo {
+      0%,100% { box-shadow: 0 0 20px rgba(59,130,246,0.3); }
+      50% { box-shadow: 0 0 40px rgba(59,130,246,0.6), 0 0 80px rgba(6,182,212,0.2); }
+    }
+    .login-title { font-family: var(--mono); font-size: 26px; font-weight: 700; margin-bottom: 6px; }
+    .login-sub { color: var(--text-muted); font-size: 13px; margin-bottom: 36px; text-align: center; }
+    .login-card {
+      width: 100%; max-width: 360px;
+      background: var(--bg-card); border: 1px solid var(--border);
+      border-radius: var(--r-lg); padding: 28px;
+      box-shadow: var(--shadow);
+    }
+
+    /* ── FORM ELEMENTS ── */
+    .form-group { margin-bottom: 16px; }
+    .form-label {
+      display: block; font-size: 11px; font-weight: 600;
+      letter-spacing: 1px; text-transform: uppercase;
+      color: var(--text-dim); margin-bottom: 6px;
+      font-family: var(--mono);
+    }
+    .form-input {
+      width: 100%; padding: 12px 14px;
+      background: var(--bg-surface); color: var(--text);
+      border: 1px solid var(--border); border-radius: var(--r-md);
+      font-size: 15px; transition: border-color .2s, box-shadow .2s;
+    }
+    .form-input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(59,130,246,0.15); }
+    .form-input::placeholder { color: var(--text-muted); }
+    .form-select {
+      width: 100%; padding: 12px 14px;
+      background: var(--bg-surface); color: var(--text);
+      border: 1px solid var(--border); border-radius: var(--r-md);
+      font-size: 15px; appearance: none;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%2364748b' stroke-width='2'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' d='M19 9l-7 7-7-7'/%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right 12px center;
+      background-size: 16px;
+      transition: border-color .2s;
+    }
+    .form-select:focus { border-color: var(--accent); }
+
+    /* ── BUTTONS ── */
+    .btn {
+      display: inline-flex; align-items: center; justify-content: center;
+      gap: 6px; padding: 12px 20px; border-radius: var(--r-md);
+      font-size: 14px; font-weight: 600; transition: all .2s;
+      letter-spacing: 0.3px;
+    }
+    .btn-primary {
+      background: var(--accent); color: #fff;
+      box-shadow: 0 4px 14px rgba(59,130,246,0.35);
+    }
+    .btn-primary:hover { background: var(--accent-glow); transform: translateY(-1px); }
+    .btn-primary:active { transform: translateY(0); }
+    .btn-ghost {
+      background: transparent; color: var(--text-dim);
+      border: 1px solid var(--border);
+    }
+    .btn-ghost:hover { border-color: var(--accent); color: var(--accent); }
+    .btn-danger { background: var(--danger); color: #fff; }
+    .btn-success { background: var(--success); color: #fff; }
+    .btn-warn { background: var(--warn); color: #000; }
+    .btn-full { width: 100%; }
+    .btn-sm { padding: 7px 12px; font-size: 12px; border-radius: var(--r-sm); }
+    .btn:disabled { opacity: 0.4; cursor: not-allowed; transform: none !important; }
+
+    /* ── SECTION HEADERS ── */
+    .section-header {
+      display: flex; align-items: center; justify-content: space-between;
+      margin-bottom: 16px;
+    }
+    .section-title {
+      font-family: var(--mono); font-size: 13px; font-weight: 700;
+      color: var(--text-dim); letter-spacing: 1.5px; text-transform: uppercase;
+    }
+
+    /* ── CARDS ── */
+    .card {
+      background: var(--bg-card); border: 1px solid var(--border);
+      border-radius: var(--r-lg); padding: 16px;
+      margin-bottom: 12px; transition: border-color .2s;
+    }
+    .card:hover { border-color: var(--border-lit); }
+
+    /* ── STATS ROW ── */
+    .stats-row {
+      display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px;
+      margin-bottom: 20px;
+    }
+    .stat-card {
+      background: var(--bg-card); border: 1px solid var(--border);
+      border-radius: var(--r-md); padding: 14px 10px; text-align: center;
+    }
+    .stat-value {
+      font-family: var(--mono); font-size: 22px; font-weight: 700;
+      color: var(--accent); line-height: 1;
+      display: block; margin-bottom: 4px;
+    }
+    .stat-label { font-size: 10px; color: var(--text-muted); letter-spacing: 0.5px; text-transform: uppercase; }
+
+    /* ── AUTOCOMPLETE ── */
+    .autocomplete-wrap { position: relative; }
+    .autocomplete-list {
+      position: absolute; top: calc(100% + 4px); left: 0; right: 0;
+      background: var(--bg-card); border: 1px solid var(--border-lit);
+      border-radius: var(--r-md); overflow-y: auto; max-height: 200px;
+      z-index: 100; box-shadow: var(--shadow);
+      display: none;
+    }
+    .autocomplete-list.open { display: block; }
+    .autocomplete-item {
+      padding: 10px 14px; cursor: pointer;
+      font-size: 13px; transition: background .15s;
+      border-bottom: 1px solid var(--border);
+    }
+    .autocomplete-item:last-child { border-bottom: none; }
+    .autocomplete-item:hover, .autocomplete-item.selected { background: var(--bg-hover); }
+    .autocomplete-code {
+      font-family: var(--mono); font-size: 11px;
+      color: var(--accent); margin-right: 6px;
+    }
+    .autocomplete-name { color: var(--text); }
+
+    /* ── UNIT TOGGLE ── */
+    .unit-toggle { display: flex; gap: 8px; margin-top: 4px; }
+    .unit-btn {
+      flex: 1; padding: 12px; border-radius: var(--r-md);
+      background: var(--bg-surface); border: 2px solid var(--border);
+      color: var(--text-muted); font-size: 14px; font-weight: 600;
+      transition: all .2s;
+    }
+    .unit-btn.active {
+      border-color: var(--accent); color: var(--accent);
+      background: rgba(59,130,246,0.1);
+      box-shadow: 0 0 12px rgba(59,130,246,0.2);
+    }
+
+    /* ── QUANTITY CONTROL ── */
+    .qty-control {
+      display: flex; align-items: center; gap: 0;
+      background: var(--bg-surface); border: 1px solid var(--border);
+      border-radius: var(--r-md); overflow: hidden;
+    }
+    .qty-btn {
+      width: 48px; height: 48px; background: none;
+      color: var(--text-dim); font-size: 20px; font-weight: 300;
+      transition: background .15s, color .15s;
+    }
+    .qty-btn:hover { background: var(--bg-hover); color: var(--accent); }
+    .qty-input {
+      flex: 1; text-align: center;
+      background: none; color: var(--text);
+      font-family: var(--mono); font-size: 22px; font-weight: 700;
+      border-left: 1px solid var(--border); border-right: 1px solid var(--border);
+      height: 48px; width: 0;
+    }
+
+    /* ── PENDING LIST ── */
+    .pending-item {
+      display: flex; align-items: flex-start; gap: 10px;
+      padding: 12px 14px;
+      background: var(--bg-card); border: 1px solid var(--border);
+      border-radius: var(--r-md); margin-bottom: 8px;
+      animation: slideIn .2s ease;
+    }
+    @keyframes slideIn { from { opacity: 0; transform: translateX(-8px); } to { opacity: 1; transform: translateX(0); } }
+    .pending-item .pi-left { flex: 1; min-width: 0; }
+    .pending-item .pi-code {
+      font-family: var(--mono); font-size: 11px;
+      color: var(--accent); margin-bottom: 2px;
+    }
+    .pending-item .pi-name {
+      font-size: 13px; font-weight: 600; color: var(--text);
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+    .pending-item .pi-meta { font-size: 11px; color: var(--text-muted); margin-top: 2px; }
+    .pending-item .pi-qty {
+      font-family: var(--mono); font-size: 20px; font-weight: 700;
+      color: var(--text); min-width: 50px; text-align: right;
+    }
+    .pending-item .pi-unit { font-size: 10px; color: var(--text-muted); text-align: right; }
+    .pending-delete {
+      background: none; color: var(--text-muted); font-size: 16px;
+      padding: 4px; transition: color .15s;
+    }
+    .pending-delete:hover { color: var(--danger); }
+
+    /* ── SYNC BAR ── */
+    #sync-bar {
+      position: fixed; top: 60px; left: 0; right: 0; z-index: 20;
+      padding: 8px 16px; background: rgba(34,197,94,0.9);
+      backdrop-filter: blur(8px); color: #fff;
+      font-size: 12px; font-weight: 600;
+      display: flex; align-items: center; justify-content: center; gap: 8px;
+      transform: translateY(-100%); transition: transform .3s;
+    }
+    #sync-bar.show { transform: translateY(0); }
+    #sync-bar.warn { background: rgba(245,158,11,0.9); }
+    #sync-bar.error { background: rgba(239,68,68,0.9); }
+
+    /* ── OFFLINE BADGE ── */
+    #offline-badge {
+      position: fixed; bottom: 90px; right: 16px; z-index: 30;
+      background: var(--warn); color: #000;
+      font-family: var(--mono); font-size: 10px; font-weight: 700;
+      padding: 5px 10px; border-radius: 99px;
+      letter-spacing: 1px; text-transform: uppercase;
+      display: none; align-items: center; gap: 5px;
+      box-shadow: 0 4px 12px rgba(245,158,11,0.4);
+    }
+    #offline-badge.show { display: flex; }
+
+    /* ── AUDIT TABLE ── */
+    .table-wrap { overflow-x: auto; border-radius: var(--r-md); border: 1px solid var(--border); }
+    table { width: 100%; border-collapse: collapse; min-width: 580px; }
+    thead { background: var(--bg-surface); }
+    th {
+      padding: 10px 12px; text-align: left;
+      font-family: var(--mono); font-size: 10px; font-weight: 700;
+      color: var(--text-muted); letter-spacing: 1px; text-transform: uppercase;
+      border-bottom: 1px solid var(--border);
+    }
+    td {
+      padding: 10px 12px; font-size: 12px; color: var(--text-dim);
+      border-bottom: 1px solid rgba(30,58,95,0.4);
+    }
+    tr:last-child td { border-bottom: none; }
+    tr:hover td { background: var(--bg-hover); }
+    td .mono { font-family: var(--mono); color: var(--accent); }
+
+    /* ── ADMIN CRUD ── */
+    .list-item {
+      display: flex; align-items: center; gap: 10px;
+      padding: 12px 14px;
+      background: var(--bg-card); border: 1px solid var(--border);
+      border-radius: var(--r-md); margin-bottom: 8px;
+      transition: border-color .2s;
+    }
+    .list-item:hover { border-color: var(--border-lit); }
+    .list-item .li-main { flex: 1; min-width: 0; }
+    .list-item .li-code {
+      font-family: var(--mono); font-size: 11px; color: var(--accent);
+    }
+    .list-item .li-name { font-size: 13px; font-weight: 600; color: var(--text); }
+    .list-item .li-actions { display: flex; gap: 6px; }
+
+    /* ── MODAL ── */
+    .modal-overlay {
+      position: fixed; inset: 0; z-index: 50;
+      background: rgba(0,0,0,0.7); backdrop-filter: blur(4px);
+      display: none; align-items: flex-end; justify-content: center;
+    }
+    .modal-overlay.open { display: flex; }
+    .modal {
+      width: 100%; max-width: 480px;
+      background: var(--bg-card); border: 1px solid var(--border);
+      border-radius: var(--r-lg) var(--r-lg) 0 0;
+      padding: 24px; padding-bottom: max(24px, env(safe-area-inset-bottom));
+      animation: slideUp .25s ease;
+    }
+    @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
+    .modal-title {
+      font-family: var(--mono); font-size: 14px; font-weight: 700;
+      color: var(--text); margin-bottom: 20px;
+      letter-spacing: 0.5px; text-transform: uppercase;
+    }
+    .modal-actions { display: flex; gap: 10px; margin-top: 20px; }
+    .modal-actions .btn { flex: 1; }
+
+    /* ── TOAST ── */
+    #toast {
+      position: fixed; bottom: 90px; left: 50%; z-index: 60;
+      transform: translateX(-50%) translateY(20px);
+      background: var(--bg-card); border: 1px solid var(--border);
+      border-radius: var(--r-md); padding: 10px 18px;
+      font-size: 13px; font-weight: 500; color: var(--text);
+      box-shadow: var(--shadow);
+      opacity: 0; transition: all .3s; white-space: nowrap;
+      pointer-events: none;
+    }
+    #toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+    #toast.success { border-color: var(--success); color: var(--success); }
+    #toast.error { border-color: var(--danger); color: var(--danger); }
+    #toast.warn { border-color: var(--warn); color: var(--warn); }
+
+    /* ── EMPTY STATE ── */
+    .empty-state {
+      text-align: center; padding: 48px 24px;
+      color: var(--text-muted);
+    }
+    .empty-state .empty-icon { font-size: 48px; margin-bottom: 12px; opacity: 0.4; }
+    .empty-state p { font-size: 13px; line-height: 1.6; }
+
+    /* ── TABS ── */
+    .tabs {
+      display: flex; gap: 4px; margin-bottom: 16px;
+      background: var(--bg-surface); border-radius: var(--r-md);
+      padding: 4px;
+    }
+    .tab {
+      flex: 1; padding: 8px; border-radius: var(--r-sm);
+      font-size: 12px; font-weight: 600; color: var(--text-muted);
+      background: none; transition: all .2s;
+      text-align: center; text-transform: uppercase; letter-spacing: 0.5px;
+    }
+    .tab.active { background: var(--accent); color: #fff; box-shadow: 0 2px 8px rgba(59,130,246,0.3); }
+
+    /* ── UPLOAD ZONE ── */
+    .upload-zone {
+      border: 2px dashed var(--border); border-radius: var(--r-md);
+      padding: 32px 16px; text-align: center; cursor: pointer;
+      transition: all .2s; margin-bottom: 12px;
+    }
+    .upload-zone:hover, .upload-zone.drag { border-color: var(--accent); background: rgba(59,130,246,0.05); }
+    .upload-zone .upload-icon { font-size: 36px; margin-bottom: 8px; }
+    .upload-zone p { font-size: 13px; color: var(--text-muted); }
+
+    /* ── LOADER ── */
+    .loader {
+      width: 20px; height: 20px;
+      border: 2px solid rgba(255,255,255,0.2);
+      border-top-color: #fff;
+      border-radius: 50%;
+      animation: spin .6s linear infinite;
+      display: inline-block;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* ── DATE FILTER ── */
+    .date-chips {
+      display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 12px;
+    }
+    .chip {
+      padding: 5px 12px; border-radius: 99px; font-size: 11px; font-weight: 600;
+      background: var(--bg-card); border: 1px solid var(--border);
+      color: var(--text-muted); cursor: pointer; transition: all .2s;
+    }
+    .chip.active { background: var(--accent); border-color: var(--accent); color: #fff; }
+
+    /* Scrollbar for table */
+    .table-wrap::-webkit-scrollbar { height: 3px; }
+    .table-wrap::-webkit-scrollbar-thumb { background: var(--border); border-radius: 99px; }
+
+    /* ── RESPONSIVE ADJUSTMENTS ── */
+    @media (min-width: 480px) {
+      .stats-row { grid-template-columns: repeat(3, 1fr); }
+      #screen-login { padding: 40px; }
+    }
+  </style>
+</head>
+<body>
+
+<div id="app">
+
+  <!-- SYNC BAR -->
+  <div id="sync-bar">
+    <span id="sync-text">Sincronizando...</span>
+  </div>
+
+  <!-- OFFLINE BADGE -->
+  <div id="offline-badge">
+    <span>⚡</span> SIN CONEXIÓN
+  </div>
+
+  <!-- TOAST -->
+  <div id="toast"></div>
+
+  <!-- TOP BAR -->
+  <div id="topbar">
+    <div class="brand">
+      <div class="brand-icon">📦</div>
+      <div class="brand-name">Inv<span>Control</span></div>
+    </div>
+    <div class="right">
+      <span id="badge-role" class="badge-role">ADMIN</span>
+      <button class="icon-btn" id="btn-logout" title="Cerrar sesión">⎋</button>
+    </div>
+  </div>
+
+  <!-- MAIN -->
+  <div id="main">
+
+    <!-- ══ LOGIN ══ -->
+    <div id="screen-login" class="screen active">
+      <div class="login-logo">📦</div>
+      <div class="login-title">InvControl</div>
+      <div class="login-sub">Sistema de Inventario Físico</div>
+      <div class="login-card">
+        <div class="form-group">
+          <label class="form-label">ID de Usuario</label>
+          <input type="text" id="login-user" class="form-input" placeholder="ej: operador01" autocomplete="username" />
+        </div>
+        <div class="form-group">
+          <label class="form-label">Contraseña</label>
+          <input type="password" id="login-pass" class="form-input" placeholder="••••••••" autocomplete="current-password" />
+        </div>
+        <button class="btn btn-primary btn-full" id="btn-login">
+          Ingresar al Sistema
+        </button>
+        <p style="text-align:center;font-size:11px;color:var(--text-muted);margin-top:14px;">
+          Demo: <strong style="color:var(--accent)">admin / admin</strong> · <strong style="color:var(--accent2)">op1 / op1</strong>
+        </p>
+      </div>
+    </div>
+
+    <!-- ══ CONTEO ══ -->
+    <div id="screen-count" class="screen">
+      <div class="section-header">
+        <span class="section-title">Registro de Conteo</span>
+        <button class="btn btn-sm btn-ghost" id="btn-clear-form">↺ Limpiar</button>
+      </div>
+
+      <div class="card">
+        <!-- Almacén -->
+        <div class="form-group">
+          <label class="form-label">📍 Almacén</label>
+          <select id="select-warehouse" class="form-select">
+            <option value="">— Seleccionar almacén —</option>
+          </select>
+        </div>
+
+        <!-- Producto autocomplete -->
+        <div class="form-group">
+          <label class="form-label">🔍 Producto</label>
+          <div class="autocomplete-wrap">
+            <input type="text" id="product-search" class="form-input" placeholder="Buscar por código o nombre..." autocomplete="off" />
+            <ul id="autocomplete-list" class="autocomplete-list"></ul>
+          </div>
+          <div id="product-selected" style="display:none;margin-top:8px;padding:8px 12px;background:rgba(59,130,246,0.1);border:1px solid var(--accent);border-radius:var(--r-sm);font-size:12px;color:var(--accent);">
+          </div>
+        </div>
+
+        <!-- Unidad -->
+        <div class="form-group">
+          <label class="form-label">📐 Unidad</label>
+          <div class="unit-toggle">
+            <button class="unit-btn active" data-unit="CAJA">📦 Caja</button>
+            <button class="unit-btn" data-unit="UND">🔩 Unidad</button>
+          </div>
+        </div>
+
+        <!-- Cantidad -->
+        <div class="form-group">
+          <label class="form-label">🔢 Cantidad</label>
+          <div class="qty-control">
+            <button class="qty-btn" id="qty-minus">−</button>
+            <input type="number" id="qty-input" class="qty-input" value="1" min="0" max="9999" />
+            <button class="qty-btn" id="qty-plus">+</button>
+          </div>
+        </div>
+
+        <!-- Notas -->
+        <div class="form-group">
+          <label class="form-label">📝 Observaciones (opcional)</label>
+          <input type="text" id="obs-input" class="form-input" placeholder="Ej: Mercadería dañada" />
+        </div>
+
+        <button class="btn btn-primary btn-full" id="btn-add-pending">
+          + Agregar al Lote
+        </button>
+      </div>
+
+      <!-- PENDING ITEMS -->
+      <div id="pending-section" style="display:none;">
+        <div class="section-header" style="margin-top:8px;">
+          <span class="section-title">Lote Pendiente (<span id="pending-count">0</span>)</span>
+          <button class="btn btn-sm btn-success" id="btn-sync">
+            ☁ Enviar Todo
+          </button>
+        </div>
+        <div id="pending-list"></div>
+      </div>
+    </div>
+
+    <!-- ══ AUDITORÍA ══ -->
+    <div id="screen-audit" class="screen">
+      <div class="section-header">
+        <span class="section-title">Panel de Auditoría</span>
+        <button class="btn btn-sm btn-ghost" id="btn-export">⬇ CSV</button>
+      </div>
+
+      <!-- Filters -->
+      <div class="date-chips" id="date-chips"></div>
+      <div style="display:flex;gap:8px;margin-bottom:12px;">
+        <input type="text" id="audit-search" class="form-input" style="flex:1" placeholder="Buscar producto o usuario..." />
+        <select id="audit-warehouse" class="form-select" style="width:140px">
+          <option value="">Todos</option>
+        </select>
+      </div>
+
+      <div class="stats-row" id="audit-stats">
+        <div class="stat-card">
+          <span class="stat-value" id="stat-total">0</span>
+          <span class="stat-label">Registros</span>
+        </div>
+        <div class="stat-card">
+          <span class="stat-value" id="stat-products">0</span>
+          <span class="stat-label">Productos</span>
+        </div>
+        <div class="stat-card">
+          <span class="stat-value" id="stat-users">0</span>
+          <span class="stat-label">Operadores</span>
+        </div>
+      </div>
+
+      <div class="table-wrap" id="audit-table-wrap">
+        <table id="audit-table">
+          <thead>
+            <tr>
+              <th>Fecha/Hora</th>
+              <th>Código</th>
+              <th>Producto</th>
+              <th>Almacén</th>
+              <th>Cant.</th>
+              <th>Uni.</th>
+              <th>Operador</th>
+              <th>Acc.</th>
+            </tr>
+          </thead>
+          <tbody id="audit-tbody"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- ══ ADMIN ══ -->
+    <div id="screen-admin" class="screen">
+      <div class="tabs">
+        <button class="tab active" data-tab="products">Productos</button>
+        <button class="tab" data-tab="warehouses">Almacenes</button>
+        <button class="tab" data-tab="import">Importar</button>
+        <button class="tab" data-tab="config">Config</button>
+      </div>
+
+      <!-- PRODUCTS TAB -->
+      <div id="tab-products" class="tab-content">
+        <div class="section-header">
+          <span class="section-title">Catálogo de Productos</span>
+          <button class="btn btn-sm btn-primary" id="btn-new-product">+ Nuevo</button>
+        </div>
+        <input type="text" id="product-filter" class="form-input" placeholder="Filtrar productos..." style="margin-bottom:12px;" />
+        <div id="products-list"></div>
+      </div>
+
+      <!-- WAREHOUSES TAB -->
+      <div id="tab-warehouses" class="tab-content" style="display:none">
+        <div class="section-header">
+          <span class="section-title">Almacenes</span>
+          <button class="btn btn-sm btn-primary" id="btn-new-warehouse">+ Nuevo</button>
+        </div>
+        <div id="warehouses-list"></div>
+      </div>
+
+      <!-- IMPORT TAB -->
+      <div id="tab-import" class="tab-content" style="display:none">
+        <div class="section-header">
+          <span class="section-title">Importación Masiva</span>
+        </div>
+        <div class="upload-zone" id="upload-zone">
+          <div class="upload-icon">📄</div>
+          <p>Arrastra un archivo CSV o Excel<br>o toca para seleccionar</p>
+          <input type="file" id="file-input" accept=".csv,.xlsx,.xls" style="display:none" />
+        </div>
+        <div class="card" style="font-size:12px;color:var(--text-dim);">
+          <strong style="color:var(--text);font-family:var(--mono);">FORMATO CSV REQUERIDO:</strong><br><br>
+          <code style="font-family:var(--mono);font-size:11px;color:var(--accent);">codigo,nombre,categoria,unidad_base</code><br>
+          <code style="font-family:var(--mono);font-size:11px;color:var(--text-dim);">PRD001,Cemento Portland 42.5,Construcción,Saco</code>
+        </div>
+        <div id="import-preview" style="display:none;"></div>
+        <button class="btn btn-primary btn-full" id="btn-import-confirm" style="display:none;">
+          ✓ Importar <span id="import-count">0</span> productos
+        </button>
+      </div>
+
+      <!-- CONFIG TAB -->
+      <div id="tab-config" class="tab-content" style="display:none">
+        <div class="section-header">
+          <span class="section-title">Configuración</span>
+        </div>
+        <div class="card">
+          <div class="form-group">
+            <label class="form-label">🔗 URL del Google Apps Script</label>
+            <input type="url" id="cfg-script-url" class="form-input" placeholder="https://script.google.com/macros/s/.../exec" />
+          </div>
+          <div class="form-group">
+            <label class="form-label">🔑 API Key (opcional)</label>
+            <input type="text" id="cfg-api-key" class="form-input" placeholder="Tu clave de acceso" />
+          </div>
+          <div class="form-group">
+            <label class="form-label">⏱ Intervalo de sincronización (segundos)</label>
+            <input type="number" id="cfg-interval" class="form-input" value="30" min="10" max="300" />
+          </div>
+          <button class="btn btn-primary btn-full" id="btn-save-config">
+            💾 Guardar Configuración
+          </button>
+        </div>
+
+        <!-- USERS -->
+        <div class="section-header" style="margin-top:16px;">
+          <span class="section-title">Gestión de Usuarios</span>
+          <button class="btn btn-sm btn-primary" id="btn-new-user">+ Nuevo</button>
+        </div>
+        <div id="users-list"></div>
+      </div>
+    </div>
+
+    <!-- ══ PERFIL ══ -->
+    <div id="screen-profile" class="screen">
+      <div class="section-header">
+        <span class="section-title">Mi Perfil</span>
+      </div>
+      <div class="card" style="text-align:center;padding:32px;">
+        <div style="width:64px;height:64px;border-radius:50%;background:linear-gradient(135deg,var(--accent),var(--accent2));margin:0 auto 16px;display:flex;align-items:center;justify-content:center;font-size:28px;">
+          👤
+        </div>
+        <div id="profile-name" style="font-size:18px;font-weight:700;margin-bottom:4px;"></div>
+        <div id="profile-role-text" style="font-size:12px;color:var(--text-muted);margin-bottom:24px;"></div>
+        <div class="stats-row">
+          <div class="stat-card">
+            <span class="stat-value" id="profile-today">0</span>
+            <span class="stat-label">Hoy</span>
+          </div>
+          <div class="stat-card">
+            <span class="stat-value" id="profile-week">0</span>
+            <span class="stat-label">Semana</span>
+          </div>
+          <div class="stat-card">
+            <span class="stat-value" id="profile-total">0</span>
+            <span class="stat-label">Total</span>
+          </div>
+        </div>
+      </div>
+      <div class="card">
+        <div style="font-family:var(--mono);font-size:11px;color:var(--text-muted);margin-bottom:12px;letter-spacing:1px;">SESIÓN ACTIVA</div>
+        <div id="session-info" style="font-size:12px;color:var(--text-dim);line-height:2;"></div>
+      </div>
+      <button class="btn btn-danger btn-full" id="btn-logout2" style="margin-top:12px;">
+        ⎋ Cerrar Sesión
+      </button>
+    </div>
+
+  </div><!-- /main -->
+
+  <!-- BOTTOM NAV -->
+  <nav id="bottom-nav">
+    <button class="nav-item hidden" data-screen="count">
+      <span class="nav-icon">📝</span>Conteo
+    </button>
+    <button class="nav-item hidden" data-screen="audit">
+      <span class="nav-icon">🔍</span>Auditoría
+    </button>
+    <button class="nav-item hidden" data-screen="admin">
+      <span class="nav-icon">⚙️</span>Admin
+    </button>
+    <button class="nav-item hidden" data-screen="profile">
+      <span class="nav-icon">👤</span>Perfil
+    </button>
+  </nav>
+
+</div><!-- /app -->
+
+<!-- MODAL PRODUCT/WAREHOUSE -->
+<div class="modal-overlay" id="modal-item">
+  <div class="modal">
+    <div class="modal-title" id="modal-item-title">Nuevo Producto</div>
+    <div id="modal-item-fields"></div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" id="modal-cancel">Cancelar</button>
+      <button class="btn btn-primary" id="modal-save">Guardar</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL CONFIRM DELETE -->
+<div class="modal-overlay" id="modal-confirm">
+  <div class="modal">
+    <div class="modal-title">⚠️ Confirmar Eliminación</div>
+    <p style="font-size:14px;color:var(--text-dim);margin-bottom:4px;">¿Seguro que deseas eliminar este registro?</p>
+    <p style="font-size:12px;color:var(--text-muted);">Esta acción no se puede deshacer.</p>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" id="confirm-cancel">Cancelar</button>
+      <button class="btn btn-danger" id="confirm-ok">Eliminar</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ══════════════════════════════════════════════════════
+//  INVCONTROL — PWA INVENTORY SYSTEM
+//  Estado: LocalStorage-backed, Google Sheets via GAS
+// ══════════════════════════════════════════════════════
+
+// ── CONFIG ──────────────────────────────────────────
+const DEFAULT_CONFIG = {
+  scriptUrl: '',
+  apiKey: '',
+  syncInterval: 30,
+};
+
+// ── STATE ────────────────────────────────────────────
+const State = {
+  currentUser: null,
+  currentScreen: 'login',
+  pendingItems: [],
+  products: [],
+  warehouses: [],
+  records: [],
+  users: [],
+  config: {},
+  selectedProduct: null,
+  selectedUnit: 'CAJA',
+  editingId: null,
+  importBuffer: [],
+  syncTimer: null,
+  isOnline: navigator.onLine,
+};
+
+// ── SAMPLE DATA ──────────────────────────────────────
+const DEMO_USERS = [
+  { id: 'admin', name: 'Administrador', pass: 'admin', role: 'admin' },
+  { id: 'op1',   name: 'Operador 01',   pass: 'op1',   role: 'operator' },
+  { id: 'op2',   name: 'Operador 02',   pass: 'op2',   role: 'operator' },
+];
+
+const DEMO_PRODUCTS = [
+  { id:'P001', code:'PRD-001', name:'Cemento Portland 42.5', category:'Construcción', unit:'Saco' },
+  { id:'P002', code:'PRD-002', name:'Varilla de Acero 3/8"', category:'Hierro', unit:'Und' },
+  { id:'P003', code:'PRD-003', name:'Tubería PVC 4"x6m', category:'PVC', unit:'Und' },
+  { id:'P004', code:'PRD-004', name:'Arena Lavada', category:'Áridos', unit:'m³' },
+  { id:'P005', code:'PRD-005', name:'Pintura Vinílica Blanco Mate', category:'Pinturas', unit:'Galón' },
+  { id:'P006', code:'PRD-006', name:'Ladrillo Rojo 18 Huecos', category:'Construcción', unit:'Und' },
+  { id:'P007', code:'PRD-007', name:'Alambre de Amarre #16', category:'Hierro', unit:'Kg' },
+  { id:'P008', code:'PRD-008', name:'Piso Cerámico 60x60 Blanco', category:'Cerámicos', unit:'Caja' },
+  { id:'P009', code:'PRD-009', name:'Manguera de Jardín 3/4"', category:'Riego', unit:'Rollo' },
+  { id:'P010', code:'PRD-010', name:'Clavos 2" sin Cabeza', category:'Ferretería', unit:'Kg' },
+];
+
+const DEMO_WAREHOUSES = [
+  { id:'W001', name:'Almacén Principal', location:'Planta Baja' },
+  { id:'W002', name:'Bodega Norte', location:'Zona Industrial' },
+  { id:'W003', name:'Depósito Central', location:'2do Piso' },
+  { id:'W004', name:'Área de Materiales', location:'Exterior' },
+];
+
+// ── STORAGE HELPERS ──────────────────────────────────
+const LS = {
+  get: (k, def=null) => { try { const v=localStorage.getItem(k); return v?JSON.parse(v):def; } catch(e){ return def; } },
+  set: (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); } catch(e){} },
+  del: (k) => localStorage.removeItem(k),
+};
+
+function loadState() {
+  State.products   = LS.get('ic_products',   DEMO_PRODUCTS);
+  State.warehouses = LS.get('ic_warehouses',  DEMO_WAREHOUSES);
+  State.records    = LS.get('ic_records',     []);
+  State.users      = LS.get('ic_users',       DEMO_USERS);
+  State.config     = LS.get('ic_config',      DEFAULT_CONFIG);
+  State.pendingItems = LS.get('ic_pending',   []);
+  const saved = LS.get('ic_session', null);
+  if (saved) {
+    State.currentUser = saved;
+    setTimeout(() => navigateTo('count'), 50);
+  }
+}
+
+function saveState() {
+  LS.set('ic_products',   State.products);
+  LS.set('ic_warehouses', State.warehouses);
+  LS.set('ic_records',    State.records);
+  LS.set('ic_users',      State.users);
+  LS.set('ic_pending',    State.pendingItems);
+  LS.set('ic_config',     State.config);
+}
+
+// ── TOAST ────────────────────────────────────────────
+let toastTimer;
+function showToast(msg, type='', duration=2500) {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.className = `show ${type}`;
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => el.className = '', duration);
+}
+
+// ── SYNC BAR ─────────────────────────────────────────
+function showSyncBar(msg, type='') {
+  const bar = document.getElementById('sync-bar');
+  document.getElementById('sync-text').textContent = msg;
+  bar.className = `show ${type}`;
+  setTimeout(() => bar.className = '', 3000);
+}
+
+// ── NAVIGATION ───────────────────────────────────────
+function navigateTo(screen) {
+  State.currentScreen = screen;
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(`screen-${screen}`).classList.add('active');
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  const navItem = document.querySelector(`.nav-item[data-screen="${screen}"]`);
+  if (navItem) navItem.classList.add('active');
+
+  if (screen === 'count') renderCountScreen();
+  if (screen === 'audit') renderAuditScreen();
+  if (screen === 'admin') renderAdminScreen();
+  if (screen === 'profile') renderProfileScreen();
+}
+
+// ── AUTH ──────────────────────────────────────────────
+function doLogin() {
+  const uid = document.getElementById('login-user').value.trim();
+  const pwd = document.getElementById('login-pass').value;
+  const user = State.users.find(u => u.id === uid && u.pass === pwd);
+  if (!user) { showToast('Credenciales incorrectas', 'error'); return; }
+  State.currentUser = user;
+  LS.set('ic_session', user);
+  applyRole(user);
+  navigateTo('count');
+  showToast(`Bienvenido, ${user.name}`, 'success');
+}
+
+function doLogout() {
+  State.currentUser = null;
+  LS.del('ic_session');
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.add('hidden'));
+  navigateTo('login');
+}
+
+function applyRole(user) {
+  const badge = document.getElementById('badge-role');
+  badge.textContent = user.role === 'admin' ? 'ADMIN' : 'OPERADOR';
+  badge.className = 'badge-role' + (user.role === 'operator' ? ' operator' : '');
+
+  // Show/hide nav items by role
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('hidden'));
+  if (user.role === 'operator') {
+    document.querySelector('.nav-item[data-screen="audit"]')?.classList.add('hidden');
+    document.querySelector('.nav-item[data-screen="admin"]')?.classList.add('hidden');
+  }
+}
+
+// ── COUNT SCREEN ──────────────────────────────────────
+function renderCountScreen() {
+  // Populate warehouses dropdown
+  const sel = document.getElementById('select-warehouse');
+  sel.innerHTML = '<option value="">— Seleccionar almacén —</option>';
+  State.warehouses.forEach(w => {
+    sel.innerHTML += `<option value="${w.id}">${w.name} · ${w.location}</option>`;
+  });
+  renderPendingList();
+}
+
+// Autocomplete
+const searchEl = document.getElementById('product-search');
+const listEl   = document.getElementById('autocomplete-list');
+
+searchEl.addEventListener('input', () => {
+  const q = searchEl.value.toLowerCase().trim();
+  listEl.innerHTML = '';
+  if (!q) { listEl.classList.remove('open'); return; }
+  const matches = State.products.filter(p =>
+    p.code.toLowerCase().includes(q) || p.name.toLowerCase().includes(q)
+  ).slice(0, 8);
+  if (!matches.length) { listEl.classList.remove('open'); return; }
+  matches.forEach(p => {
+    const li = document.createElement('li');
+    li.className = 'autocomplete-item';
+    li.innerHTML = `<span class="autocomplete-code">${p.code}</span><span class="autocomplete-name">${p.name}</span>`;
+    li.addEventListener('click', () => selectProduct(p));
+    listEl.appendChild(li);
+  });
+  listEl.classList.add('open');
+});
+
+document.addEventListener('click', (e) => {
+  if (!e.target.closest('.autocomplete-wrap')) listEl.classList.remove('open');
+});
+
+function selectProduct(p) {
+  State.selectedProduct = p;
+  searchEl.value = '';
+  listEl.classList.remove('open');
+  const box = document.getElementById('product-selected');
+  box.style.display = 'block';
+  box.innerHTML = `✓ <strong>${p.code}</strong> — ${p.name}`;
+}
+
+// Unit toggle
+document.querySelectorAll('.unit-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.unit-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    State.selectedUnit = btn.dataset.unit;
+  });
+});
+
+// Qty controls
+document.getElementById('qty-minus').addEventListener('click', () => {
+  const inp = document.getElementById('qty-input');
+  inp.value = Math.max(0, parseInt(inp.value||0) - 1);
+});
+document.getElementById('qty-plus').addEventListener('click', () => {
+  const inp = document.getElementById('qty-input');
+  inp.value = parseInt(inp.value||0) + 1;
+});
+document.getElementById('qty-input').addEventListener('input', () => {
+  const inp = document.getElementById('qty-input');
+  if (inp.value < 0) inp.value = 0;
+});
+
+// Add to pending
+document.getElementById('btn-add-pending').addEventListener('click', () => {
+  const warehouse = document.getElementById('select-warehouse').value;
+  const qty = parseInt(document.getElementById('qty-input').value || 0);
+  const obs = document.getElementById('obs-input').value.trim();
+
+  if (!warehouse) { showToast('Selecciona un almacén', 'warn'); return; }
+  if (!State.selectedProduct) { showToast('Selecciona un producto', 'warn'); return; }
+  if (qty <= 0) { showToast('La cantidad debe ser mayor a 0', 'warn'); return; }
+
+  const wh = State.warehouses.find(w => w.id === warehouse);
+  const item = {
+    id: `PND-${Date.now()}`,
+    productId: State.selectedProduct.id,
+    productCode: State.selectedProduct.code,
+    productName: State.selectedProduct.name,
+    warehouseId: warehouse,
+    warehouseName: wh?.name || warehouse,
+    unit: State.selectedUnit,
+    qty: qty,
+    obs: obs,
+    timestamp: new Date().toISOString(),
+    userId: State.currentUser.id,
+    userName: State.currentUser.name,
+  };
+  State.pendingItems.unshift(item);
+  LS.set('ic_pending', State.pendingItems);
+  renderPendingList();
+  clearCountForm();
+  showToast(`${State.selectedProduct.code} añadido al lote`, 'success');
+});
+
+function clearCountForm() {
+  State.selectedProduct = null;
+  document.getElementById('product-search').value = '';
+  document.getElementById('product-selected').style.display = 'none';
+  document.getElementById('qty-input').value = '1';
+  document.getElementById('obs-input').value = '';
+  document.querySelectorAll('.unit-btn').forEach((b,i) => b.classList.toggle('active', i===0));
+  State.selectedUnit = 'CAJA';
+}
+
+document.getElementById('btn-clear-form').addEventListener('click', clearCountForm);
+
+function renderPendingList() {
+  const section = document.getElementById('pending-section');
+  const list = document.getElementById('pending-list');
+  const count = document.getElementById('pending-count');
+  count.textContent = State.pendingItems.length;
+  if (!State.pendingItems.length) { section.style.display='none'; return; }
+  section.style.display = 'block';
+  list.innerHTML = State.pendingItems.map(item => `
+    <div class="pending-item" data-id="${item.id}">
+      <div class="pi-left">
+        <div class="pi-code">${item.productCode}</div>
+        <div class="pi-name">${item.productName}</div>
+        <div class="pi-meta">📍 ${item.warehouseName} · ${formatTime(item.timestamp)}</div>
+      </div>
+      <div>
+        <div class="pi-qty">${item.qty}</div>
+        <div class="pi-unit">${item.unit}</div>
+      </div>
+      <button class="pending-delete" data-id="${item.id}">✕</button>
+    </div>
+  `).join('');
+
+  list.querySelectorAll('.pending-delete').forEach(btn => {
+    btn.addEventListener('click', () => {
+      State.pendingItems = State.pendingItems.filter(i => i.id !== btn.dataset.id);
+      LS.set('ic_pending', State.pendingItems);
+      renderPendingList();
+    });
+  });
+}
+
+// Sync to backend
+document.getElementById('btn-sync').addEventListener('click', syncPending);
+
+async function syncPending() {
+  if (!State.pendingItems.length) { showToast('No hay ítems pendientes', 'warn'); return; }
+  const btn = document.getElementById('btn-sync');
+  btn.innerHTML = '<span class="loader"></span>';
+  btn.disabled = true;
+
+  try {
+    await sendToGAS(State.pendingItems);
+    // Move to records
+    State.pendingItems.forEach(item => {
+      State.records.unshift({ ...item, synced: true, syncedAt: new Date().toISOString() });
+    });
+    State.pendingItems = [];
+    saveState();
+    renderPendingList();
+    showSyncBar(`✓ ${State.records.length > 0 ? 'Registros sincronizados' : 'OK'}`, '');
+    showToast('Lote enviado exitosamente', 'success');
+  } catch(err) {
+    showToast('Error al sincronizar. Datos guardados offline.', 'error');
+  } finally {
+    btn.innerHTML = '☁ Enviar Todo';
+    btn.disabled = false;
+  }
+}
+
+async function sendToGAS(items) {
+  const url = State.config.scriptUrl;
+  if (!url) {
+    // Simulate success in demo mode
+    await new Promise(r => setTimeout(r, 800));
+    return;
+  }
+  const res = await fetch(url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      action: 'addRecords',
+      apiKey: State.config.apiKey,
+      records: items,
+    }),
+  });
+  if (!res.ok) throw new Error('HTTP ' + res.status);
+  return res.json();
+}
+
+// ── AUDIT SCREEN ──────────────────────────────────────
+let auditDateFilter = null;
+let auditSearchFilter = '';
+let auditWarehouseFilter = '';
+
+function renderAuditScreen() {
+  renderDateChips();
+  renderAuditWarehouseFilter();
+  renderAuditTable();
+}
+
+function renderDateChips() {
+  const dates = [...new Set(State.records.map(r => r.timestamp.slice(0,10)))].sort().reverse();
+  const chips = document.getElementById('date-chips');
+  chips.innerHTML = `<div class="chip ${!auditDateFilter?'active':''}" data-date="">Todos</div>`;
+  dates.slice(0,5).forEach(d => {
+    chips.innerHTML += `<div class="chip ${auditDateFilter===d?'active':''}" data-date="${d}">${formatDate(d)}</div>`;
+  });
+  chips.querySelectorAll('.chip').forEach(c => {
+    c.addEventListener('click', () => {
+      auditDateFilter = c.dataset.date || null;
+      renderAuditScreen();
+    });
+  });
+}
+
+function renderAuditWarehouseFilter() {
+  const sel = document.getElementById('audit-warehouse');
+  const cur = sel.value;
+  sel.innerHTML = '<option value="">Todos</option>';
+  State.warehouses.forEach(w => sel.innerHTML += `<option value="${w.id}" ${cur===w.id?'selected':''}>${w.name}</option>`);
+}
+
+function renderAuditTable() {
+  let records = [...State.records];
+  if (auditDateFilter) records = records.filter(r => r.timestamp.startsWith(auditDateFilter));
+  if (auditWarehouseFilter) records = records.filter(r => r.warehouseId === auditWarehouseFilter);
+  if (auditSearchFilter) {
+    const q = auditSearchFilter.toLowerCase();
+    records = records.filter(r =>
+      r.productName?.toLowerCase().includes(q) ||
+      r.productCode?.toLowerCase().includes(q) ||
+      r.userId?.toLowerCase().includes(q) ||
+      r.userName?.toLowerCase().includes(q)
+    );
+  }
+
+  document.getElementById('stat-total').textContent = records.length;
+  document.getElementById('stat-products').textContent = new Set(records.map(r=>r.productId)).size;
+  document.getElementById('stat-users').textContent = new Set(records.map(r=>r.userId)).size;
+
+  const tbody = document.getElementById('audit-tbody');
+  if (!records.length) {
+    tbody.innerHTML = `<tr><td colspan="8" style="text-align:center;padding:32px;color:var(--text-muted);">Sin registros para mostrar</td></tr>`;
+    return;
+  }
+  tbody.innerHTML = records.slice(0,100).map(r => `
+    <tr>
+      <td class="mono" style="font-size:10px;">${formatDatetime(r.timestamp)}</td>
+      <td class="mono">${r.productCode||''}</td>
+      <td>${r.productName||''}</td>
+      <td>${r.warehouseName||''}</td>
+      <td style="font-weight:700;color:var(--text);">${r.qty}</td>
+      <td>${r.unit}</td>
+      <td style="color:var(--accent2)">${r.userId}</td>
+      <td>
+        ${State.currentUser?.role==='admin' ? `<button class="btn btn-sm" style="background:rgba(239,68,68,0.1);color:var(--danger);border:1px solid rgba(239,68,68,0.3);" onclick="deleteRecord('${r.id}')">✕</button>` : '—'}
+      </td>
+    </tr>
+  `).join('');
+}
+
+document.getElementById('audit-search').addEventListener('input', (e) => {
+  auditSearchFilter = e.target.value;
+  renderAuditTable();
+});
+document.getElementById('audit-warehouse').addEventListener('change', (e) => {
+  auditWarehouseFilter = e.target.value;
+  renderAuditTable();
+});
+
+function deleteRecord(id) {
+  confirmAction(() => {
+    State.records = State.records.filter(r => r.id !== id);
+    saveState();
+    renderAuditTable();
+    showToast('Registro eliminado', 'warn');
+  });
+}
+
+document.getElementById('btn-export').addEventListener('click', exportCSV);
+function exportCSV() {
+  const headers = ['Fecha','Hora','Codigo','Producto','Almacen','Cantidad','Unidad','Operador','Obs'];
+  const rows = State.records.map(r => [
+    r.timestamp?.slice(0,10),
+    r.timestamp?.slice(11,19),
+    r.productCode, r.productName, r.warehouseName,
+    r.qty, r.unit, r.userId, r.obs||''
+  ]);
+  const csv = [headers, ...rows].map(row => row.map(c => `"${(c||'').toString().replace(/"/g,'""')}"`).join(',')).join('\n');
+  const blob = new Blob(['\uFEFF'+csv], { type:'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = `inventario_${new Date().toISOString().slice(0,10)}.csv`;
+  a.click(); URL.revokeObjectURL(url);
+}
+
+// ── ADMIN SCREEN ──────────────────────────────────────
+let currentTab = 'products';
+
+function renderAdminScreen() {
+  renderProductsList();
+  renderWarehousesList();
+  renderUsersList();
+  loadConfig();
+}
+
+document.querySelectorAll('.tab').forEach(tab => {
+  tab.addEventListener('click', () => {
+    currentTab = tab.dataset.tab;
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    tab.classList.add('active');
+    document.querySelectorAll('.tab-content').forEach(c => c.style.display='none');
+    document.getElementById(`tab-${currentTab}`).style.display = 'block';
+  });
+});
+
+// PRODUCTS
+document.getElementById('product-filter').addEventListener('input', renderProductsList);
+document.getElementById('btn-new-product').addEventListener('click', () => openItemModal('product'));
+
+function renderProductsList() {
+  const q = document.getElementById('product-filter').value.toLowerCase();
+  const list = document.getElementById('products-list');
+  let prods = State.products;
+  if (q) prods = prods.filter(p => p.code.toLowerCase().includes(q) || p.name.toLowerCase().includes(q));
+  if (!prods.length) { list.innerHTML = `<div class="empty-state"><div class="empty-icon">📦</div><p>No hay productos.</p></div>`; return; }
+  list.innerHTML = prods.map(p => `
+    <div class="list-item">
+      <div class="li-main">
+        <div class="li-code">${p.code}</div>
+        <div class="li-name">${p.name}</div>
+        <div style="font-size:11px;color:var(--text-muted);">${p.category} · ${p.unit}</div>
+      </div>
+      <div class="li-actions">
+        <button class="btn btn-sm btn-ghost" onclick="openItemModal('product','${p.id}')">✏</button>
+        <button class="btn btn-sm" style="background:rgba(239,68,68,0.1);color:var(--danger);border:1px solid rgba(239,68,68,0.3);" onclick="deleteItem('product','${p.id}')">✕</button>
+      </div>
+    </div>
+  `).join('');
+}
+
+function renderWarehousesList() {
+  const list = document.getElementById('warehouses-list');
+  if (!State.warehouses.length) { list.innerHTML = `<div class="empty-state"><div class="empty-icon">🏭</div><p>No hay almacenes.</p></div>`; return; }
+  list.innerHTML = State.warehouses.map(w => `
+    <div class="list-item">
+      <div class="li-main">
+        <div class="li-code">${w.id}</div>
+        <div class="li-name">${w.name}</div>
+        <div style="font-size:11px;color:var(--text-muted);">${w.location}</div>
+      </div>
+      <div class="li-actions">
+        <button class="btn btn-sm btn-ghost" onclick="openItemModal('warehouse','${w.id}')">✏</button>
+        <button class="btn btn-sm" style="background:rgba(239,68,68,0.1);color:var(--danger);border:1px solid rgba(239,68,68,0.3);" onclick="deleteItem('warehouse','${w.id}')">✕</button>
+      </div>
+    </div>
+  `).join('');
+}
+
+function renderUsersList() {
+  const list = document.getElementById('users-list');
+  const nonDemo = State.users.filter(u => u.id !== 'admin'); // keep admin always
+  list.innerHTML = State.users.map(u => `
+    <div class="list-item">
+      <div class="li-main">
+        <div class="li-code">${u.id}</div>
+        <div class="li-name">${u.name}</div>
+        <div style="font-size:11px;color:${u.role==='admin'?'var(--accent)':'var(--accent2)'};">${u.role==='admin'?'Administrador':'Operador'}</div>
+      </div>
+      <div class="li-actions">
+        <button class="btn btn-sm btn-ghost" onclick="openItemModal('user','${u.id}')">✏</button>
+        ${u.id!=='admin'?`<button class="btn btn-sm" style="background:rgba(239,68,68,0.1);color:var(--danger);border:1px solid rgba(239,68,68,0.3);" onclick="deleteItem('user','${u.id}')">✕</button>`:''}
+      </div>
+    </div>
+  `).join('');
+}
+
+document.getElementById('btn-new-warehouse').addEventListener('click', () => openItemModal('warehouse'));
+document.getElementById('btn-new-user').addEventListener('click', () => openItemModal('user'));
+
+// ── MODAL CRUD ────────────────────────────────────────
+let modalType = '';
+let modalEditId = '';
+
+window.openItemModal = function(type, id=null) {
+  modalType = type; modalEditId = id;
+  const overlay = document.getElementById('modal-item');
+  const title = document.getElementById('modal-item-title');
+  const fields = document.getElementById('modal-item-fields');
+
+  const existing = id ? (
+    type==='product'   ? State.products.find(p=>p.id===id) :
+    type==='warehouse' ? State.warehouses.find(w=>w.id===id) :
+    State.users.find(u=>u.id===id)
+  ) : null;
+
+  if (type === 'product') {
+    title.textContent = id ? 'Editar Producto' : 'Nuevo Producto';
+    fields.innerHTML = `
+      <div class="form-group"><label class="form-label">Código</label><input class="form-input" id="mf-code" value="${existing?.code||''}" placeholder="PRD-XXX"/></div>
+      <div class="form-group"><label class="form-label">Nombre</label><input class="form-input" id="mf-name" value="${existing?.name||''}" placeholder="Nombre del producto"/></div>
+      <div class="form-group"><label class="form-label">Categoría</label><input class="form-input" id="mf-cat" value="${existing?.category||''}" placeholder="Categoría"/></div>
+      <div class="form-group"><label class="form-label">Unidad base</label><input class="form-input" id="mf-unit" value="${existing?.unit||''}" placeholder="Und, Kg, m³..."/></div>
+    `;
+  } else if (type === 'warehouse') {
+    title.textContent = id ? 'Editar Almacén' : 'Nuevo Almacén';
+    fields.innerHTML = `
+      <div class="form-group"><label class="form-label">ID</label><input class="form-input" id="mf-id" value="${existing?.id||''}" placeholder="W00X"/></div>
+      <div class="form-group"><label class="form-label">Nombre</label><input class="form-input" id="mf-name" value="${existing?.name||''}" placeholder="Nombre del almacén"/></div>
+      <div class="form-group"><label class="form-label">Ubicación</label><input class="form-input" id="mf-loc" value="${existing?.location||''}" placeholder="Planta, Zona..."/></div>
+    `;
+  } else if (type === 'user') {
+    title.textContent = id ? 'Editar Usuario' : 'Nuevo Usuario';
+    fields.innerHTML = `
+      <div class="form-group"><label class="form-label">ID de Usuario</label><input class="form-input" id="mf-id" value="${existing?.id||''}" placeholder="usuario01" ${id?'readonly':''}/></div>
+      <div class="form-group"><label class="form-label">Nombre Completo</label><input class="form-input" id="mf-name" value="${existing?.name||''}" placeholder="Nombre Apellido"/></div>
+      <div class="form-group"><label class="form-label">Contraseña</label><input type="password" class="form-input" id="mf-pass" placeholder="Nueva contraseña"/></div>
+      <div class="form-group"><label class="form-label">Rol</label>
+        <select class="form-select" id="mf-role">
+          <option value="operator" ${existing?.role==='operator'?'selected':''}>Operador</option>
+          <option value="admin" ${existing?.role==='admin'?'selected':''}>Administrador</option>
+        </select>
+      </div>
+    `;
+  }
+  overlay.classList.add('open');
+};
+
+document.getElementById('modal-cancel').addEventListener('click', closeModal);
+document.getElementById('modal-item').addEventListener('click', (e) => { if(e.target===e.currentTarget) closeModal(); });
+function closeModal() { document.getElementById('modal-item').classList.remove('open'); }
+
+document.getElementById('modal-save').addEventListener('click', () => {
+  if (modalType === 'product') {
+    const code = document.getElementById('mf-code').value.trim();
+    const name = document.getElementById('mf-name').value.trim();
+    const cat  = document.getElementById('mf-cat').value.trim();
+    const unit = document.getElementById('mf-unit').value.trim();
+    if (!code||!name) { showToast('Código y nombre son requeridos','warn'); return; }
+    if (modalEditId) {
+      const p = State.products.find(p=>p.id===modalEditId);
+      Object.assign(p, {code,name,category:cat,unit});
+    } else {
+      State.products.push({id:`P${Date.now()}`,code,name,category:cat,unit});
+    }
+    saveState(); renderProductsList();
+  } else if (modalType === 'warehouse') {
+    const wid  = document.getElementById('mf-id').value.trim();
+    const name = document.getElementById('mf-name').value.trim();
+    const loc  = document.getElementById('mf-loc').value.trim();
+    if (!name) { showToast('El nombre es requerido','warn'); return; }
+    if (modalEditId) {
+      const w = State.warehouses.find(w=>w.id===modalEditId);
+      Object.assign(w, {id:wid,name,location:loc});
+    } else {
+      State.warehouses.push({id:wid||`W${Date.now()}`,name,location:loc});
+    }
+    saveState(); renderWarehousesList();
+  } else if (modalType === 'user') {
+    const uid  = document.getElementById('mf-id').value.trim();
+    const name = document.getElementById('mf-name').value.trim();
+    const pass = document.getElementById('mf-pass').value;
+    const role = document.getElementById('mf-role').value;
+    if (!uid||!name) { showToast('ID y nombre son requeridos','warn'); return; }
+    if (modalEditId) {
+      const u = State.users.find(u=>u.id===modalEditId);
+      Object.assign(u, {name,role}); if(pass) u.pass=pass;
+    } else {
+      if (!pass) { showToast('La contraseña es requerida','warn'); return; }
+      State.users.push({id:uid,name,pass,role});
+    }
+    saveState(); renderUsersList();
+  }
+  closeModal(); showToast('Guardado exitosamente','success');
+});
+
+window.deleteItem = function(type, id) {
+  confirmAction(() => {
+    if (type==='product')   State.products   = State.products.filter(p=>p.id!==id);
+    if (type==='warehouse') State.warehouses = State.warehouses.filter(w=>w.id!==id);
+    if (type==='user')      State.users      = State.users.filter(u=>u.id!==id);
+    saveState();
+    if (type==='product')   renderProductsList();
+    if (type==='warehouse') renderWarehousesList();
+    if (type==='user')      renderUsersList();
+    showToast('Eliminado','warn');
+  });
+};
+
+// ── CONFIRM DIALOG ────────────────────────────────────
+let confirmCallback = null;
+function confirmAction(cb) {
+  confirmCallback = cb;
+  document.getElementById('modal-confirm').classList.add('open');
+}
+document.getElementById('confirm-cancel').addEventListener('click', () => {
+  document.getElementById('modal-confirm').classList.remove('open');
+});
+document.getElementById('confirm-ok').addEventListener('click', () => {
+  document.getElementById('modal-confirm').classList.remove('open');
+  if (confirmCallback) { confirmCallback(); confirmCallback=null; }
+});
+
+// ── IMPORT CSV ────────────────────────────────────────
+const uploadZone = document.getElementById('upload-zone');
+const fileInput  = document.getElementById('file-input');
+
+uploadZone.addEventListener('click', () => fileInput.click());
+uploadZone.addEventListener('dragover', (e) => { e.preventDefault(); uploadZone.classList.add('drag'); });
+uploadZone.addEventListener('dragleave', () => uploadZone.classList.remove('drag'));
+uploadZone.addEventListener('drop', (e) => {
+  e.preventDefault(); uploadZone.classList.remove('drag');
+  const file = e.dataTransfer.files[0];
+  if (file) processFile(file);
+});
+fileInput.addEventListener('change', () => { if(fileInput.files[0]) processFile(fileInput.files[0]); });
+
+function processFile(file) {
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    const text = e.target.result;
+    const lines = text.split('\n').filter(l=>l.trim());
+    // Skip header row
+    const data = lines.slice(1).map(line => {
+      const parts = line.split(',').map(p=>p.trim().replace(/^"|"$/g,''));
+      return { code: parts[0]||'', name: parts[1]||'', category: parts[2]||'', unit: parts[3]||'' };
+    }).filter(d => d.code && d.name);
+
+    State.importBuffer = data;
+    const preview = document.getElementById('import-preview');
+    preview.style.display = 'block';
+    preview.innerHTML = `
+      <div class="card" style="max-height:200px;overflow-y:auto;">
+        <div style="font-family:var(--mono);font-size:10px;color:var(--text-muted);margin-bottom:8px;">PREVISUALIZACIÓN — ${data.length} productos detectados</div>
+        ${data.slice(0,10).map(d=>`<div style="font-size:12px;padding:4px 0;border-bottom:1px solid var(--border);color:var(--text-dim);">
+          <strong style="color:var(--accent);font-family:var(--mono)">${d.code}</strong> ${d.name}
+        </div>`).join('')}
+        ${data.length>10?`<div style="font-size:11px;color:var(--text-muted);padding:8px 0;">... y ${data.length-10} más</div>`:''}
+      </div>`;
+    const btn = document.getElementById('btn-import-confirm');
+    document.getElementById('import-count').textContent = data.length;
+    btn.style.display = 'block';
+  };
+  reader.readAsText(file);
+}
+
+document.getElementById('btn-import-confirm').addEventListener('click', () => {
+  const newProds = State.importBuffer.map(d => ({
+    id: `P${Date.now()}-${Math.random().toString(36).slice(2,6)}`,
+    code: d.code, name: d.name, category: d.category, unit: d.unit
+  }));
+  State.products = [...State.products, ...newProds];
+  saveState();
+  document.getElementById('import-preview').style.display = 'none';
+  document.getElementById('btn-import-confirm').style.display = 'none';
+  fileInput.value = '';
+  State.importBuffer = [];
+  showToast(`${newProds.length} productos importados`, 'success');
+});
+
+// ── CONFIG ────────────────────────────────────────────
+function loadConfig() {
+  document.getElementById('cfg-script-url').value = State.config.scriptUrl||'';
+  document.getElementById('cfg-api-key').value    = State.config.apiKey||'';
+  document.getElementById('cfg-interval').value   = State.config.syncInterval||30;
+}
+
+document.getElementById('btn-save-config').addEventListener('click', () => {
+  State.config.scriptUrl    = document.getElementById('cfg-script-url').value.trim();
+  State.config.apiKey       = document.getElementById('cfg-api-key').value.trim();
+  State.config.syncInterval = parseInt(document.getElementById('cfg-interval').value)||30;
+  saveState();
+  showToast('Configuración guardada', 'success');
+});
+
+// ── PROFILE SCREEN ────────────────────────────────────
+function renderProfileScreen() {
+  const u = State.currentUser;
+  if (!u) return;
+  document.getElementById('profile-name').textContent = u.name;
+  document.getElementById('profile-role-text').textContent = u.role === 'admin' ? '👑 Administrador' : '🔧 Operador';
+
+  const today = new Date().toISOString().slice(0,10);
+  const weekAgo = new Date(Date.now()-7*86400000).toISOString().slice(0,10);
+  const myRecs = State.records.filter(r => r.userId === u.id);
+  const todayRecs = myRecs.filter(r => r.timestamp?.startsWith(today));
+  const weekRecs  = myRecs.filter(r => r.timestamp?.slice(0,10) >= weekAgo);
+
+  document.getElementById('profile-today').textContent = todayRecs.length;
+  document.getElementById('profile-week').textContent  = weekRecs.length;
+  document.getElementById('profile-total').textContent = myRecs.length;
+
+  document.getElementById('session-info').innerHTML = `
+    <div>🆔 ID: <strong style="color:var(--accent);font-family:var(--mono)">${u.id}</strong></div>
+    <div>🕐 Sesión iniciada: <strong>${formatDatetime(new Date().toISOString())}</strong></div>
+    <div>📡 Estado: <strong style="color:${State.isOnline?'var(--success)':'var(--warn)'}">${State.isOnline?'En línea':'Sin conexión'}</strong></div>
+    <div>💾 Pendientes offline: <strong style="color:${State.pendingItems.length?'var(--warn)':'var(--text-dim)'}">${State.pendingItems.length}</strong></div>
+  `;
+}
+
+// ── DATE HELPERS ──────────────────────────────────────
+function formatDate(iso) {
+  const d = new Date(iso); return d.toLocaleDateString('es', {day:'2-digit',month:'short'});
+}
+function formatTime(iso) {
+  const d = new Date(iso); return d.toLocaleTimeString('es', {hour:'2-digit',minute:'2-digit'});
+}
+function formatDatetime(iso) {
+  const d = new Date(iso);
+  return d.toLocaleDateString('es',{day:'2-digit',month:'2-digit'}) + ' ' +
+         d.toLocaleTimeString('es',{hour:'2-digit',minute:'2-digit'});
+}
+
+// ── ONLINE/OFFLINE ────────────────────────────────────
+window.addEventListener('online',  () => { State.isOnline=true;  document.getElementById('offline-badge').classList.remove('show'); showSyncBar('Conexión restaurada ✓',''); });
+window.addEventListener('offline', () => { State.isOnline=false; document.getElementById('offline-badge').classList.add('show'); showSyncBar('Sin conexión — datos guardados localmente','warn'); });
+
+// ── EVENT BINDINGS ────────────────────────────────────
+document.getElementById('btn-login').addEventListener('click', doLogin);
+document.getElementById('login-pass').addEventListener('keydown', (e) => { if(e.key==='Enter') doLogin(); });
+document.getElementById('login-user').addEventListener('keydown', (e) => { if(e.key==='Enter') document.getElementById('login-pass').focus(); });
+document.getElementById('btn-logout').addEventListener('click', doLogout);
+document.getElementById('btn-logout2').addEventListener('click', doLogout);
+
+document.querySelectorAll('.nav-item').forEach(item => {
+  item.addEventListener('click', () => navigateTo(item.dataset.screen));
+});
+
+// ── ADD DEMO RECORDS ──────────────────────────────────
+function seedDemoRecords() {
+  if (State.records.length > 0) return;
+  const now = Date.now();
+  const demo = [
+    { productCode:'PRD-001', productName:'Cemento Portland 42.5', warehouseId:'W001', warehouseName:'Almacén Principal', qty:50, unit:'CAJA', userId:'op1', userName:'Operador 01' },
+    { productCode:'PRD-003', productName:'Tubería PVC 4"x6m', warehouseId:'W002', warehouseName:'Bodega Norte', qty:12, unit:'UND', userId:'op2', userName:'Operador 02' },
+    { productCode:'PRD-005', productName:'Pintura Vinílica Blanco Mate', warehouseId:'W001', warehouseName:'Almacén Principal', qty:8, unit:'CAJA', userId:'op1', userName:'Operador 01' },
+    { productCode:'PRD-008', productName:'Piso Cerámico 60x60 Blanco', warehouseId:'W003', warehouseName:'Depósito Central', qty:30, unit:'CAJA', userId:'op2', userName:'Operador 02' },
+  ];
+  demo.forEach((d,i) => {
+    State.records.push({
+      id: `REC-${now-i*60000}`,
+      ...d,
+      productId: `P00${i+1}`,
+      timestamp: new Date(now - i * 3600000).toISOString(),
+      synced: true, obs: ''
+    });
+  });
+  saveState();
+}
+
+// ── INIT ──────────────────────────────────────────────
+loadState();
+seedDemoRecords();
+if (!State.isOnline) document.getElementById('offline-badge').classList.add('show');
+</script>
+
+</body>
+</html>

@@ -1,0 +1,23 @@
+{
+  "name": "InvControl — Inventario Físico",
+  "short_name": "InvControl",
+  "description": "Sistema PWA de toma de inventario físico con sincronización a Google Sheets",
+  "start_url": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#0a0f1e",
+  "theme_color": "#0f172a",
+  "lang": "es",
+  "icons": [
+    { "src": "icons/icon-72.png",  "sizes": "72x72",   "type": "image/png" },
+    { "src": "icons/icon-96.png",  "sizes": "96x96",   "type": "image/png" },
+    { "src": "icons/icon-128.png", "sizes": "128x128", "type": "image/png" },
+    { "src": "icons/icon-144.png", "sizes": "144x144", "type": "image/png" },
+    { "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any maskable" },
+    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }
+  ],
+  "categories": ["business", "productivity"],
+  "screenshots": [
+    { "src": "screenshots/mobile.png", "sizes": "390x844", "type": "image/png" }
+  ]
+}
