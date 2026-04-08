@@ -49,6 +49,11 @@
     /* ── APP SHELL ── */
     #app { height: 100dvh; display: flex; flex-direction: column; position: relative; overflow: hidden; }
 
+    /* ── LOGIN STATE — oculta topbar y nav ── */
+    #app.on-login #topbar    { display: none; }
+    #app.on-login #bottom-nav { display: none; }
+    #app.on-login #main      { padding-bottom: 0; }
+
     /* ── GRID BACKGROUND ── */
     #app::before {
       content: '';
@@ -112,6 +117,12 @@
       position: relative; z-index: 1;
       padding-bottom: 80px;
     }
+    /* On login, main fills full height with no bottom padding */
+    #app.on-login #main {
+      padding-bottom: 0;
+      display: flex;
+      flex-direction: column;
+    }
     #main::-webkit-scrollbar { width: 3px; }
     #main::-webkit-scrollbar-thumb { background: var(--border); border-radius: 99px; }
 
@@ -146,9 +157,11 @@
     #screen-login {
       display: flex; flex-direction: column;
       justify-content: center; align-items: center;
-      min-height: 100%; padding: 24px;
+      flex: 1; min-height: 100dvh; padding: 24px;
     }
     #screen-login.active { display: flex; }
+    /* When topbar is hidden (on-login), login fills exactly the viewport */
+    #app.on-login #screen-login { min-height: 100dvh; }
     .login-logo {
       width: 80px; height: 80px;
       background: linear-gradient(135deg, var(--accent), var(--accent2));
@@ -352,10 +365,12 @@
       backdrop-filter: blur(8px); color: #fff;
       font-size: 12px; font-weight: 600;
       display: flex; align-items: center; justify-content: center; gap: 8px;
-      transform: translateY(-100%); transition: transform .3s;
+      pointer-events: none;
+      opacity: 0; transform: translateY(-8px);
+      transition: opacity .35s, transform .35s;
     }
-    #sync-bar.show { transform: translateY(0); }
-    #sync-bar.warn { background: rgba(245,158,11,0.9); }
+    #sync-bar.show { opacity: 1; transform: translateY(0); pointer-events: auto; }
+    #sync-bar.warn  { background: rgba(245,158,11,0.9); }
     #sync-bar.error { background: rgba(239,68,68,0.9); }
 
     /* ── OFFLINE BADGE ── */
@@ -918,7 +933,6 @@ function loadState() {
   const saved = LS.get('ic_session', null);
   if (saved) {
     State.currentUser = saved;
-    setTimeout(() => navigateTo('count'), 50);
   }
 }
 
@@ -952,15 +966,25 @@ function showSyncBar(msg, type='') {
 // ── NAVIGATION ───────────────────────────────────────
 function navigateTo(screen) {
   State.currentScreen = screen;
+
+  // Toggle login-state class so topbar/nav hide on login
+  document.getElementById('app').classList.toggle('on-login', screen === 'login');
+
+  // Switch screens
   document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
   document.getElementById(`screen-${screen}`).classList.add('active');
+
+  // Update bottom nav active state
   document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
   const navItem = document.querySelector(`.nav-item[data-screen="${screen}"]`);
   if (navItem) navItem.classList.add('active');
 
-  if (screen === 'count') renderCountScreen();
-  if (screen === 'audit') renderAuditScreen();
-  if (screen === 'admin') renderAdminScreen();
+  // Always scroll #main back to top on screen change
+  document.getElementById('main').scrollTop = 0;
+
+  if (screen === 'count')   renderCountScreen();
+  if (screen === 'audit')   renderAuditScreen();
+  if (screen === 'admin')   renderAdminScreen();
   if (screen === 'profile') renderProfileScreen();
 }
 
@@ -972,9 +996,12 @@ function doLogin() {
   if (!user) { showToast('Credenciales incorrectas', 'error'); return; }
   State.currentUser = user;
   LS.set('ic_session', user);
+  // Clear form
+  document.getElementById('login-user').value = '';
+  document.getElementById('login-pass').value = '';
   applyRole(user);
   navigateTo('count');
-  showToast(`Bienvenido, ${user.name}`, 'success');
+  showToast(`Bienvenido, ${user.name} 👋`, 'success');
 }
 
 function doLogout() {
@@ -1653,6 +1680,19 @@ function seedDemoRecords() {
 // ── INIT ──────────────────────────────────────────────
 loadState();
 seedDemoRecords();
+
+// Always start with login state on the #app wrapper
+document.getElementById('app').classList.add('on-login');
+
+// If there's a saved session, restore it
+if (State.currentUser) {
+  applyRole(State.currentUser);
+  navigateTo('count');
+} else {
+  // Ensure nav items are hidden until login
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.add('hidden'));
+}
+
 if (!State.isOnline) document.getElementById('offline-badge').classList.add('show');
 </script>
 
