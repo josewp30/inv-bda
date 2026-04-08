@@ -155,7 +155,7 @@
 
     /* ── LOGIN SCREEN ── */
     #screen-login {
-      display: flex; flex-direction: column;
+      display: none; flex-direction: column;
       justify-content: center; align-items: center;
       flex: 1; min-height: 100dvh; padding: 24px;
     }
@@ -925,14 +925,20 @@ const LS = {
 
 function loadState() {
   State.products   = LS.get('ic_products',   DEMO_PRODUCTS);
-  State.warehouses = LS.get('ic_warehouses',  DEMO_WAREHOUSES);
+  State.warehouses = LS.get('ic_warehouses', DEMO_WAREHOUSES);
   State.records    = LS.get('ic_records',     []);
   State.users      = LS.get('ic_users',       DEMO_USERS);
   State.config     = LS.get('ic_config',      DEFAULT_CONFIG);
   State.pendingItems = LS.get('ic_pending',   []);
   const saved = LS.get('ic_session', null);
   if (saved) {
-    State.currentUser = saved;
+    const validUser = State.users.find(u => u.id === saved.id && u.pass === saved.pass);
+    if (validUser) {
+      State.currentUser = validUser;
+    } else {
+      LS.del('ic_session');
+      State.currentUser = null;
+    }
   }
 }
 
@@ -991,7 +997,7 @@ function navigateTo(screen) {
 // ── AUTH ──────────────────────────────────────────────
 function doLogin() {
   const uid = document.getElementById('login-user').value.trim();
-  const pwd = document.getElementById('login-pass').value;
+  const pwd = document.getElementById('login-pass').value.trim();
   const user = State.users.find(u => u.id === uid && u.pass === pwd);
   if (!user) { showToast('Credenciales incorrectas', 'error'); return; }
   State.currentUser = user;
