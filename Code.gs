@@ -145,8 +145,8 @@ function addRecords(records) {
       const ts = new Date(r.timestamp || new Date());
       const row = [
         r.id || `REC-${Date.now()}-${Math.random().toString(36).slice(2,6)}`,
-        Utilities.formatDate(ts, Session.getScriptTimeZone(), 'yyyy-MM-dd'),
-        Utilities.formatDate(ts, Session.getScriptTimeZone(), 'HH:mm:ss'),
+        Utilities.formatDate(ts, "GMT-4", 'yyyy-MM-dd'),
+        Utilities.formatDate(ts, "GMT-4", 'HH:mm:ss'),
         r.timestamp || ts.toISOString(),
         r.productCode || '',
         r.productName || '',
