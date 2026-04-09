@@ -15,28 +15,28 @@
   <style>
     /* ── DESIGN TOKENS ── */
     :root {
-      --bg:         #0a0f1e;
-      --bg-surface: #111827;
-      --bg-card:    #1a2235;
-      --bg-hover:   #1e2d45;
-      --border:     #1e3a5f;
-      --border-lit: #2563eb;
-      --accent:     #3b82f6;
-      --accent-glow:#1d4ed8;
-      --accent2:    #06b6d4;
+      --bg:         #000000;
+      --bg-surface: #0a0a0a;
+      --bg-card:    #121212;
+      --bg-hover:   #1a1a1a;
+      --border:     #222222;
+      --border-lit: #FF2900;
+      --accent:     #FF2900;
+      --accent-glow:#cc2100;
+      --accent2:    #ff5433;
       --danger:     #ef4444;
       --success:    #22c55e;
       --warn:       #f59e0b;
-      --text:       #e2e8f0;
-      --text-muted: #64748b;
-      --text-dim:   #94a3b8;
+      --text:       #ffffff;
+      --text-muted: #888888;
+      --text-dim:   #bbbbbb;
       --mono:       'Space Mono', monospace;
       --sans:       'DM Sans', sans-serif;
       --r-sm:       8px;
       --r-md:       12px;
       --r-lg:       16px;
-      --shadow:     0 4px 24px rgba(0,0,0,0.5);
-      --glow:       0 0 20px rgba(59,130,246,0.3);
+      --shadow:     0 4px 24px rgba(0,0,0,0.8);
+      --glow:       0 0 20px rgba(255,41,0,0.3);
     }
 
     /* ── RESET ── */
@@ -59,8 +59,8 @@
       content: '';
       position: fixed; inset: 0;
       background-image:
-        linear-gradient(rgba(59,130,246,0.04) 1px, transparent 1px),
-        linear-gradient(90deg, rgba(59,130,246,0.04) 1px, transparent 1px);
+        linear-gradient(rgba(255,41,0,0.03) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255,41,0,0.03) 1px, transparent 1px);
       background-size: 32px 32px;
       pointer-events: none;
       z-index: 0;
@@ -71,7 +71,7 @@
       position: relative; z-index: 10;
       display: flex; align-items: center; justify-content: space-between;
       padding: 12px 16px;
-      background: rgba(10,15,30,0.9);
+      background: rgba(0,0,0,0.9);
       backdrop-filter: blur(12px);
       border-bottom: 1px solid var(--border);
     }
@@ -79,18 +79,27 @@
       display: flex; align-items: center; gap: 10px;
     }
     #topbar .brand-icon {
-      width: 34px; height: 34px;
-      background: linear-gradient(135deg, var(--accent), var(--accent2));
-      border-radius: var(--r-sm);
+      width: 38px; height: 38px;
+      background: #fff;
+      border-radius: 50%;
       display: flex; align-items: center; justify-content: center;
-      font-size: 16px;
+      padding: 2px;
       box-shadow: var(--glow);
+      overflow: hidden;
+    }
+    #topbar .brand-icon img {
+      width: 100%; height: 100%; object-fit: contain;
     }
     #topbar .brand-name {
-      font-family: var(--mono);
-      font-size: 15px; font-weight: 700;
-      letter-spacing: -0.5px;
-      color: var(--text);
+      display: flex; flex-direction: column; line-height: 1.2;
+    }
+    #topbar .brand-main {
+      font-family: var(--sans); font-size: 16px; font-weight: 800;
+      color: var(--text); letter-spacing: -0.2px;
+    }
+    #topbar .brand-sub {
+      font-family: var(--mono); font-size: 9px; font-weight: 600;
+      color: var(--accent); letter-spacing: 1px; text-transform: uppercase;
     }
     #topbar .brand-name span { color: var(--accent); }
     #topbar .right { display: flex; align-items: center; gap: 8px; }
@@ -98,10 +107,10 @@
       font-family: var(--mono); font-size: 10px;
       padding: 3px 8px; border-radius: 99px;
       border: 1px solid var(--border-lit);
-      color: var(--accent); background: rgba(59,130,246,0.08);
+      color: var(--accent); background: rgba(255,41,0,0.1);
       letter-spacing: 1px; text-transform: uppercase;
     }
-    .badge-role.operator { border-color: var(--accent2); color: var(--accent2); background: rgba(6,182,212,0.08); }
+    .badge-role.operator { border-color: var(--accent2); color: var(--accent2); background: rgba(255,84,51,0.1); }
     .icon-btn {
       width: 34px; height: 34px;
       background: var(--bg-card); border: 1px solid var(--border);
@@ -131,7 +140,7 @@
       position: fixed; bottom: 0; left: 0; right: 0;
       z-index: 10;
       display: flex; align-items: center;
-      background: rgba(10,15,30,0.95);
+      background: rgba(0,0,0,0.95);
       backdrop-filter: blur(16px);
       border-top: 1px solid var(--border);
       padding: 8px 0 max(8px, env(safe-area-inset-bottom));
@@ -171,8 +180,8 @@
       animation: pulse-logo 3s ease-in-out infinite;
     }
     @keyframes pulse-logo {
-      0%,100% { box-shadow: 0 0 20px rgba(59,130,246,0.3); }
-      50% { box-shadow: 0 0 40px rgba(59,130,246,0.6), 0 0 80px rgba(6,182,212,0.2); }
+      0%,100% { box-shadow: 0 0 20px rgba(255,41,0,0.3); }
+      50% { box-shadow: 0 0 40px rgba(255,41,0,0.6), 0 0 80px rgba(255,84,51,0.2); }
     }
     .login-title { font-family: var(--mono); font-size: 26px; font-weight: 700; margin-bottom: 6px; }
     .login-sub { color: var(--text-muted); font-size: 13px; margin-bottom: 36px; text-align: center; }
@@ -197,7 +206,7 @@
       border: 1px solid var(--border); border-radius: var(--r-md);
       font-size: 15px; transition: border-color .2s, box-shadow .2s;
     }
-    .form-input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(59,130,246,0.15); }
+    .form-input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(255,41,0,0.15); }
     .form-input::placeholder { color: var(--text-muted); }
     .form-select {
       width: 100%; padding: 12px 14px;
@@ -221,7 +230,7 @@
     }
     .btn-primary {
       background: var(--accent); color: #fff;
-      box-shadow: 0 4px 14px rgba(59,130,246,0.35);
+      box-shadow: 0 4px 14px rgba(255,41,0,0.35);
     }
     .btn-primary:hover { background: var(--accent-glow); transform: translateY(-1px); }
     .btn-primary:active { transform: translateY(0); }
@@ -304,8 +313,8 @@
     }
     .unit-btn.active {
       border-color: var(--accent); color: var(--accent);
-      background: rgba(59,130,246,0.1);
-      box-shadow: 0 0 12px rgba(59,130,246,0.2);
+      background: rgba(255,41,0,0.1);
+      box-shadow: 0 0 12px rgba(255,41,0,0.2);
     }
 
     /* ── QUANTITY CONTROL ── */
@@ -478,7 +487,7 @@
       background: none; transition: all .2s;
       text-align: center; text-transform: uppercase; letter-spacing: 0.5px;
     }
-    .tab.active { background: var(--accent); color: #fff; box-shadow: 0 2px 8px rgba(59,130,246,0.3); }
+    .tab.active { background: var(--accent); color: #fff; box-shadow: 0 2px 8px rgba(255,41,0,0.3); }
 
     /* ── UPLOAD ZONE ── */
     .upload-zone {
@@ -486,7 +495,7 @@
       padding: 32px 16px; text-align: center; cursor: pointer;
       transition: all .2s; margin-bottom: 12px;
     }
-    .upload-zone:hover, .upload-zone.drag { border-color: var(--accent); background: rgba(59,130,246,0.05); }
+    .upload-zone:hover, .upload-zone.drag { border-color: var(--accent); background: rgba(255,41,0,0.05); }
     .upload-zone .upload-icon { font-size: 36px; margin-bottom: 8px; }
     .upload-zone p { font-size: 13px; color: var(--text-muted); }
 
@@ -543,8 +552,13 @@
   <!-- TOP BAR -->
   <div id="topbar">
     <div class="brand">
-      <div class="brand-icon">📦</div>
-      <div class="brand-name">Inv<span>Control</span></div>
+      <div class="brand-icon">
+        <img src="https://i.postimg.cc/mD7XF6yG/bodegon-logo.jpg" alt="Logo" onerror="this.src='📦';this.style.fontSize='20px'">
+      </div>
+      <div class="brand-name">
+        <span class="brand-main">BODEGON DON ANASTACIO</span>
+        <span class="brand-sub">SISTEMA DE INVENTARIO</span>
+      </div>
     </div>
     <div class="right">
       <span id="badge-role" class="badge-role">ADMIN</span>
@@ -601,7 +615,7 @@
             <input type="text" id="product-search" class="form-input" placeholder="Buscar por código o nombre..." autocomplete="off" />
             <ul id="autocomplete-list" class="autocomplete-list"></ul>
           </div>
-          <div id="product-selected" style="display:none;margin-top:8px;padding:8px 12px;background:rgba(59,130,246,0.1);border:1px solid var(--accent);border-radius:var(--r-sm);font-size:12px;color:var(--accent);">
+          <div id="product-selected" style="display:none;margin-top:8px;padding:8px 12px;background:rgba(255,41,0,0.1);border:1px solid var(--accent);border-radius:var(--r-sm);font-size:12px;color:var(--accent);">
           </div>
         </div>
 
@@ -651,16 +665,28 @@
     <div id="screen-audit" class="screen">
       <div class="section-header">
         <span class="section-title">Panel de Auditoría</span>
-        <button class="btn btn-sm btn-ghost" id="btn-export">⬇ CSV</button>
+        <div style="display:flex;gap:8px;">
+           <button class="btn btn-sm btn-ghost" id="btn-export-csv">⬇ CSV</button>
+           <button class="btn btn-sm btn-ghost" id="btn-export-xls">⬇ XLS</button>
+        </div>
       </div>
 
       <!-- Filters -->
-      <div class="date-chips" id="date-chips"></div>
-      <div style="display:flex;gap:8px;margin-bottom:12px;">
-        <input type="text" id="audit-search" class="form-input" style="flex:1" placeholder="Buscar producto o usuario..." />
-        <select id="audit-warehouse" class="form-select" style="width:140px">
-          <option value="">Todos</option>
-        </select>
+      <div style="display:flex; gap:8px; margin-bottom:12px; align-items:center;">
+        <div style="flex:1;">
+          <label class="form-label" style="margin-bottom:4px;">Filtrar por Fecha</label>
+          <input type="date" id="audit-date-picker" class="form-input" style="padding:8px;" />
+        </div>
+        <div style="flex:1;">
+          <label class="form-label" style="margin-bottom:4px;">Almacén</label>
+          <select id="audit-warehouse" class="form-select" style="padding:8px;">
+            <option value="">Todos</option>
+          </select>
+        </div>
+      </div>
+
+      <div style="margin-bottom:12px;">
+        <input type="text" id="audit-search" class="form-input" placeholder="Buscar producto o usuario..." />
       </div>
 
       <div class="stats-row" id="audit-stats">
@@ -1118,7 +1144,7 @@ document.getElementById('btn-add-pending').addEventListener('click', () => {
     unit: State.selectedUnit,
     qty: qty,
     obs: obs,
-    timestamp: new Date().toISOString(),
+    timestamp: new Date().toLocaleString("en-US", {timeZone: "America/Caracas"}), // Hora de Venezuela para el registro local
     userId: State.currentUser.id,
     userName: State.currentUser.name,
   };
@@ -1257,24 +1283,8 @@ let auditSearchFilter = '';
 let auditWarehouseFilter = '';
 
 function renderAuditScreen() {
-  renderDateChips();
   renderAuditWarehouseFilter();
   renderAuditTable();
-}
-
-function renderDateChips() {
-  const dates = [...new Set(State.records.map(r => r.timestamp.slice(0,10)))].sort().reverse();
-  const chips = document.getElementById('date-chips');
-  chips.innerHTML = `<div class="chip ${!auditDateFilter?'active':''}" data-date="">Todos</div>`;
-  dates.slice(0,5).forEach(d => {
-    chips.innerHTML += `<div class="chip ${auditDateFilter===d?'active':''}" data-date="${d}">${formatDate(d)}</div>`;
-  });
-  chips.querySelectorAll('.chip').forEach(c => {
-    c.addEventListener('click', () => {
-      auditDateFilter = c.dataset.date || null;
-      renderAuditScreen();
-    });
-  });
 }
 
 function renderAuditWarehouseFilter() {
@@ -1286,7 +1296,9 @@ function renderAuditWarehouseFilter() {
 
 function renderAuditTable() {
   let records = [...State.records];
-  if (auditDateFilter) records = records.filter(r => r.timestamp.startsWith(auditDateFilter));
+  const dateFilter = document.getElementById('audit-date-picker').value;
+
+  if (dateFilter) records = records.filter(r => r.timestamp.startsWith(dateFilter));
   if (auditWarehouseFilter) records = records.filter(r => r.warehouseId === auditWarehouseFilter);
   if (auditSearchFilter) {
     const q = auditSearchFilter.toLowerCase();
@@ -1323,6 +1335,7 @@ function renderAuditTable() {
   `).join('');
 }
 
+document.getElementById('audit-date-picker').addEventListener('change', renderAuditTable);
 document.getElementById('audit-search').addEventListener('input', (e) => {
   auditSearchFilter = e.target.value;
   renderAuditTable();
@@ -1341,8 +1354,10 @@ function deleteRecord(id) {
   });
 }
 
-document.getElementById('btn-export').addEventListener('click', exportCSV);
-function exportCSV() {
+document.getElementById('btn-export-csv').addEventListener('click', () => exportData('csv'));
+document.getElementById('btn-export-xls').addEventListener('click', () => exportData('xls'));
+
+function exportData(type) {
   const headers = ['Fecha','Hora','Codigo','Producto','Almacen','Cantidad','Unidad','Operador','Obs'];
   const rows = State.records.map(r => [
     r.timestamp?.slice(0,10),
@@ -1350,11 +1365,27 @@ function exportCSV() {
     r.productCode, r.productName, r.warehouseName,
     r.qty, r.unit, r.userId, r.obs||''
   ]);
-  const csv = [headers, ...rows].map(row => row.map(c => `"${(c||'').toString().replace(/"/g,'""')}"`).join(',')).join('\n');
-  const blob = new Blob(['\uFEFF'+csv], { type:'text/csv;charset=utf-8;' });
+
+  if (type === 'csv') {
+    const csv = [headers, ...rows].map(row => row.map(c => `"${(c||'').toString().replace(/"/g,'""')}"`).join(',')).join('\n');
+    const blob = new Blob(['\uFEFF'+csv], { type:'text/csv;charset=utf-8;' });
+    downloadFile(blob, `inventario_${new Date().toISOString().slice(0,10)}.csv`);
+  } else {
+    // Simple HTML table format for XLS compatibility
+    let html = '<table border="1"><thead><tr>' + headers.map(h => `<th>${h}</th>`).join('') + '</tr></thead><tbody>';
+    rows.forEach(row => {
+      html += '<tr>' + row.map(c => `<td>${c||''}</td>`).join('') + '</tr>';
+    });
+    html += '</tbody></table>';
+    const blob = new Blob(['\uFEFF'+html], { type:'application/vnd.ms-excel' });
+    downloadFile(blob, `inventario_${new Date().toISOString().slice(0,10)}.xls`);
+  }
+}
+
+function downloadFile(blob, filename) {
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
-  a.href = url; a.download = `inventario_${new Date().toISOString().slice(0,10)}.csv`;
+  a.href = url; a.download = filename;
   a.click(); URL.revokeObjectURL(url);
 }
 
