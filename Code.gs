@@ -14,7 +14,7 @@
 
 // ── CONFIGURACIÓN ──────────────────────────────────────
 const CONFIG = {
-  API_KEY: 'TU_CLAVE_API_AQUI',       // Cambia esto
+  API_KEY: 'alfa#621',       // Cambia esto
   SPREADSHEET_ID: '',                  // Déjalo vacío = usa el Spreadsheet donde está el script
   SHEET_RECORDS:   'Registros',
   SHEET_PRODUCTS:  'Productos',

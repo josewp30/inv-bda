@@ -1202,22 +1202,53 @@ async function syncPending() {
 
 async function sendToGAS(items) {
   const url = State.config.scriptUrl;
-  if (!url) {
-    // Simulate success in demo mode
+  if (!url || url.includes('TU_URL_DE_APPS_SCRIPT_AQUI')) {
+    console.warn("URL de Apps Script no configurada. Simulando envío...");
     await new Promise(r => setTimeout(r, 800));
     return;
   }
+
+  // Usamos text/plain para evitar errores de CORS con preflight OPTIONS en GAS
   const res = await fetch(url, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    mode: 'no-cors', // Importante para Apps Script
+    headers: { 'Content-Type': 'text/plain' },
     body: JSON.stringify({
       action: 'addRecords',
       apiKey: State.config.apiKey,
       records: items,
     }),
   });
-  if (!res.ok) throw new Error('HTTP ' + res.status);
-  return res.json();
+
+  // Al usar no-cors, no podemos leer la respuesta, pero si no hay error de red, asumimos éxito
+  return { success: true };
+}
+
+async function fetchInitialData() {
+  const url = State.config.scriptUrl;
+  if (!url || url.includes('TU_URL_DE_APPS_SCRIPT_AQUI')) return;
+
+  showSyncBar('Descargando datos...', '');
+  try {
+    const res = await fetch(`${url}?action=products&apiKey=${State.config.apiKey}`);
+    const json = await res.json();
+    if (json.success) {
+      State.products = json.data;
+      saveState();
+      if (State.currentScreen === 'admin') renderProductsList();
+    }
+
+    const resW = await fetch(`${url}?action=warehouses&apiKey=${State.config.apiKey}`);
+    const jsonW = await resW.json();
+    if (jsonW.success) {
+      State.warehouses = jsonW.data;
+      saveState();
+      if (State.currentScreen === 'count') renderCountScreen();
+    }
+    showToast('Datos actualizados desde el servidor', 'success');
+  } catch (err) {
+    console.error("Error al descargar datos:", err);
+  }
 }
 
 // ── AUDIT SCREEN ──────────────────────────────────────
@@ -1680,6 +1711,7 @@ function seedDemoRecords() {
 // ── INIT ──────────────────────────────────────────────
 loadState();
 seedDemoRecords();
+fetchInitialData(); // Intenta descargar productos/almacenes reales al iniciar
 
 // Always start with login state on the #app wrapper
 document.getElementById('app').classList.add('on-login');
