@@ -1698,15 +1698,15 @@ function renderProfileScreen() {
 
 // ── DATE HELPERS ──────────────────────────────────────
 function formatDate(iso) {
-  const d = new Date(iso); return d.toLocaleDateString('es', {day:'2-digit',month:'short'});
+  const d = new Date(iso); return d.toLocaleDateString('es-VE', {day:'2-digit',month:'short',timeZone:'America/Caracas'});
 }
 function formatTime(iso) {
-  const d = new Date(iso); return d.toLocaleTimeString('es', {hour:'2-digit',minute:'2-digit'});
+  const d = new Date(iso); return d.toLocaleTimeString('es-VE', {hour:'2-digit',minute:'2-digit',timeZone:'America/Caracas'});
 }
 function formatDatetime(iso) {
   const d = new Date(iso);
-  return d.toLocaleDateString('es',{day:'2-digit',month:'2-digit'}) + ' ' +
-         d.toLocaleTimeString('es',{hour:'2-digit',minute:'2-digit'});
+  return d.toLocaleDateString('es-VE',{day:'2-digit',month:'2-digit',timeZone:'America/Caracas'}) + ' ' +
+         d.toLocaleTimeString('es-VE',{hour:'2-digit',minute:'2-digit',timeZone:'America/Caracas'});
 }
 
 // ── ONLINE/OFFLINE ────────────────────────────────────

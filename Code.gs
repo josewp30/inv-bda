@@ -147,7 +147,7 @@ function addRecords(records) {
         r.id || `REC-${Date.now()}-${Math.random().toString(36).slice(2,6)}`,
         Utilities.formatDate(ts, "GMT-4", 'yyyy-MM-dd'),
         Utilities.formatDate(ts, "GMT-4", 'HH:mm:ss'),
-        r.timestamp || ts.toISOString(),
+        Utilities.formatDate(ts, "GMT-4", "yyyy-MM-dd HH:mm:ss"),
         r.productCode || '',
         r.productName || '',
         r.warehouseId || '',
@@ -157,7 +157,7 @@ function addRecords(records) {
         r.userId || '',
         r.userName || '',
         r.obs || '',
-        new Date().toISOString(),
+        Utilities.formatDate(new Date(), "GMT-4", "yyyy-MM-dd HH:mm:ss"),
       ];
       sheet.appendRow(row);
       totalAdded++;
