@@ -8,13 +8,13 @@
   "theme_color": "#FF2900",
   "icons": [
     {
-      "src": "https://i.postimg.cc/mD7XF6yG/bodegon-logo.jpg",
+      "src": "logo.png",
       "sizes": "192x192",
       "type": "image/png",
       "purpose": "any maskable"
     },
     {
-      "src": "https://i.postimg.cc/mD7XF6yG/bodegon-logo.jpg",
+      "src": "logo.png",
       "sizes": "512x512",
       "type": "image/png"
     }
