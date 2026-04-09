@@ -1233,7 +1233,7 @@ async function syncPending() {
   }
 }
 
-async function sendToGAS(items) {
+async function sendToGAS(items, action = 'addRecords') {
   const url = State.config.scriptUrl;
   if (!url || url.includes('TU_URL_DE_APPS_SCRIPT_AQUI')) {
     console.warn("URL de Apps Script no configurada. Simulando envío...");
@@ -1241,19 +1241,24 @@ async function sendToGAS(items) {
     return;
   }
 
-  // Usamos text/plain para evitar errores de CORS con preflight OPTIONS en GAS
+  const payload = {
+    action: action,
+    apiKey: State.config.apiKey,
+  };
+
+  if (action === 'addRecords') payload.records = items;
+  else if (action === 'addProduct') payload.product = items;
+  else if (action === 'updateProduct') payload.product = items;
+  else if (action === 'addWarehouse') payload.warehouse = items;
+  else if (action === 'importProducts') payload.products = items;
+
   const res = await fetch(url, {
     method: 'POST',
-    mode: 'no-cors', // Importante para Apps Script
+    mode: 'no-cors',
     headers: { 'Content-Type': 'text/plain' },
-    body: JSON.stringify({
-      action: 'addRecords',
-      apiKey: State.config.apiKey,
-      records: items,
-    }),
+    body: JSON.stringify(payload),
   });
 
-  // Al usar no-cors, no podemos leer la respuesta, pero si no hay error de red, asumimos éxito
   return { success: true };
 }
 
@@ -1542,8 +1547,11 @@ document.getElementById('modal-save').addEventListener('click', () => {
     if (modalEditId) {
       const p = State.products.find(p=>p.id===modalEditId);
       Object.assign(p, {code,name,category:cat,unit});
+      sendToGAS(p, 'updateProduct');
     } else {
-      State.products.push({id:`P${Date.now()}`,code,name,category:cat,unit});
+      const newP = {id:`P${Date.now()}`,code,name,category:cat,unit};
+      State.products.push(newP);
+      sendToGAS(newP, 'addProduct');
     }
     saveState(); renderProductsList();
   } else if (modalType === 'warehouse') {
@@ -1554,8 +1562,11 @@ document.getElementById('modal-save').addEventListener('click', () => {
     if (modalEditId) {
       const w = State.warehouses.find(w=>w.id===modalEditId);
       Object.assign(w, {id:wid,name,location:loc});
+      // GAS no tiene updateWarehouse implementado, pero podríamos añadirlo si fuera necesario
     } else {
-      State.warehouses.push({id:wid||`W${Date.now()}`,name,location:loc});
+      const newW = {id:wid||`W${Date.now()}`,name,location:loc};
+      State.warehouses.push(newW);
+      sendToGAS(newW, 'addWarehouse');
     }
     saveState(); renderWarehousesList();
   } else if (modalType === 'user') {
@@ -1653,6 +1664,7 @@ document.getElementById('btn-import-confirm').addEventListener('click', () => {
   }));
   State.products = [...State.products, ...newProds];
   saveState();
+  sendToGAS(newProds, 'importProducts');
   document.getElementById('import-preview').style.display = 'none';
   document.getElementById('btn-import-confirm').style.display = 'none';
   fileInput.value = '';
