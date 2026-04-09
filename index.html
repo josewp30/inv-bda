@@ -749,16 +749,11 @@
       <!-- CONFIG TAB -->
       <div id="tab-config" class="tab-content" style="display:none">
         <div class="section-header">
-          <span class="section-title">Configuración</span>
+          <span class="section-title">Configuración del Sistema</span>
         </div>
         <div class="card">
-          <div class="form-group">
-            <label class="form-label">🔗 URL del Google Apps Script</label>
-            <input type="url" id="cfg-script-url" class="form-input" placeholder="https://script.google.com/macros/s/.../exec" />
-          </div>
-          <div class="form-group">
-            <label class="form-label">🔑 API Key (opcional)</label>
-            <input type="text" id="cfg-api-key" class="form-input" placeholder="Tu clave de acceso" />
+          <div style="font-size: 13px; color: var(--text-dim); margin-bottom: 16px; line-height: 1.5;">
+            La conexión con <strong>Google Apps Script</strong> está configurada internamente en el código.
           </div>
           <div class="form-group">
             <label class="form-label">⏱ Intervalo de sincronización (segundos)</label>
@@ -865,9 +860,12 @@
 // ══════════════════════════════════════════════════════
 
 // ── CONFIG ──────────────────────────────────────────
+const DATABASE_CONFIG = {
+  scriptUrl: 'https://script.google.com/macros/s/AKfycbyiRAPYifZgXHoVIHLlW6lyZ5sGAN9jrNOvGbsm-tAppdbBX2nYVxkhizYJCS3fS9V8yw/exec', // Reemplaza con tu URL real
+  apiKey: 'alfa#621',             // Reemplaza con tu clave API
+};
+
 const DEFAULT_CONFIG = {
-  scriptUrl: '',
-  apiKey: '',
   syncInterval: 30,
 };
 
@@ -880,7 +878,7 @@ const State = {
   warehouses: [],
   records: [],
   users: [],
-  config: {},
+  config: { ...DEFAULT_CONFIG, ...DATABASE_CONFIG },
   selectedProduct: null,
   selectedUnit: 'CAJA',
   editingId: null,
@@ -928,7 +926,7 @@ function loadState() {
   State.warehouses = LS.get('ic_warehouses', DEMO_WAREHOUSES);
   State.records    = LS.get('ic_records',     []);
   State.users      = LS.get('ic_users',       DEMO_USERS);
-  State.config     = LS.get('ic_config',      DEFAULT_CONFIG);
+  State.config     = { ...DATABASE_CONFIG, ...LS.get('ic_config', DEFAULT_CONFIG) };
   State.pendingItems = LS.get('ic_pending',   []);
   const saved = LS.get('ic_session', null);
   if (saved) {
@@ -1595,15 +1593,11 @@ document.getElementById('btn-import-confirm').addEventListener('click', () => {
 
 // ── CONFIG ────────────────────────────────────────────
 function loadConfig() {
-  document.getElementById('cfg-script-url').value = State.config.scriptUrl||'';
-  document.getElementById('cfg-api-key').value    = State.config.apiKey||'';
-  document.getElementById('cfg-interval').value   = State.config.syncInterval||30;
+  document.getElementById('cfg-interval').value = State.config.syncInterval || 30;
 }
 
 document.getElementById('btn-save-config').addEventListener('click', () => {
-  State.config.scriptUrl    = document.getElementById('cfg-script-url').value.trim();
-  State.config.apiKey       = document.getElementById('cfg-api-key').value.trim();
-  State.config.syncInterval = parseInt(document.getElementById('cfg-interval').value)||30;
+  State.config.syncInterval = parseInt(document.getElementById('cfg-interval').value) || 30;
   saveState();
   showToast('Configuración guardada', 'success');
 });
