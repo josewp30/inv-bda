@@ -172,12 +172,17 @@
     /* When topbar is hidden (on-login), login fills exactly the viewport */
     #app.on-login #screen-login { min-height: 100dvh; }
     .login-logo {
-      width: 80px; height: 80px;
-      background: linear-gradient(135deg, var(--accent), var(--accent2));
-      border-radius: 20px; margin-bottom: 24px;
+      width: 120px; height: 120px;
+      background: #fff;
+      border-radius: 50%; margin-bottom: 24px;
       display: flex; align-items: center; justify-content: center;
-      font-size: 36px; box-shadow: var(--glow);
+      padding: 4px;
+      box-shadow: var(--glow);
       animation: pulse-logo 3s ease-in-out infinite;
+      overflow: hidden;
+    }
+    .login-logo img {
+      width: 100%; height: 100%; object-fit: contain;
     }
     @keyframes pulse-logo {
       0%,100% { box-shadow: 0 0 20px rgba(255,41,0,0.3); }
@@ -553,7 +558,7 @@
   <div id="topbar">
     <div class="brand">
       <div class="brand-icon">
-        <img src="https://i.postimg.cc/mD7XF6yG/bodegon-logo.jpg" alt="Logo" onerror="this.src='📦';this.style.fontSize='20px'">
+        <img src="https://i.postimg.cc/44p6X88y/bodegon-logo.jpg" alt="Logo" onerror="this.src='📦';this.style.fontSize='20px'">
       </div>
       <div class="brand-name">
         <span class="brand-main">BODEGON DON ANASTACIO</span>
@@ -571,8 +576,10 @@
 
     <!-- ══ LOGIN ══ -->
     <div id="screen-login" class="screen active">
-      <div class="login-logo">📦</div>
-      <div class="login-title">InvControl</div>
+      <div class="login-logo">
+        <img src="https://i.postimg.cc/44p6X88y/bodegon-logo.jpg" alt="Bodegón Don Anastacio Logo">
+      </div>
+      <div class="login-title">BODEGÓN DON ANASTACIO</div>
       <div class="login-sub">Sistema de Inventario Físico</div>
       <div class="login-card">
         <div class="form-group">
