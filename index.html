@@ -679,16 +679,27 @@
       </div>
 
       <!-- Filters -->
-      <div style="display:flex; gap:8px; margin-bottom:12px; align-items:center;">
-        <div style="flex:1;">
-          <label class="form-label" style="margin-bottom:4px;">Filtrar por Fecha</label>
-          <input type="date" id="audit-date-picker" class="form-input" style="padding:8px;" />
+      <div style="display:flex; flex-direction:column; gap:8px; margin-bottom:12px;">
+        <div style="display:flex; gap:8px;">
+          <div style="flex:1;">
+            <label class="form-label" style="font-size:9px; margin-bottom:4px;">Día</label>
+            <input type="date" id="audit-date-picker" class="form-input" style="padding:8px; font-size:12px; cursor:pointer;" onclick="this.showPicker()" />
+          </div>
+          <div style="flex:1;">
+            <label class="form-label" style="font-size:9px; margin-bottom:4px;">Mes</label>
+            <input type="month" id="audit-month-picker" class="form-input" style="padding:8px; font-size:12px; cursor:pointer;" onclick="this.showPicker()" />
+          </div>
         </div>
-        <div style="flex:1;">
-          <label class="form-label" style="margin-bottom:4px;">Almacén</label>
-          <select id="audit-warehouse" class="form-select" style="padding:8px;">
-            <option value="">Todos</option>
-          </select>
+        <div style="display:flex; gap:8px;">
+          <div style="flex:1;">
+            <label class="form-label" style="font-size:9px; margin-bottom:4px;">Almacén</label>
+            <select id="audit-warehouse" class="form-select" style="padding:8px; font-size:12px;">
+              <option value="">Todos</option>
+            </select>
+          </div>
+          <div style="flex:1; display:flex; align-items:flex-end;">
+             <button class="btn btn-sm btn-ghost" id="btn-audit-today" style="width:100%; height:34px; font-size:11px;">Hoy</button>
+          </div>
         </div>
       </div>
 
@@ -1342,8 +1353,13 @@ function renderAuditWarehouseFilter() {
 function renderAuditTable() {
   let records = [...State.records];
   const dateFilter = document.getElementById('audit-date-picker').value;
+  const monthFilter = document.getElementById('audit-month-picker').value;
 
-  if (dateFilter) records = records.filter(r => r.timestamp.startsWith(dateFilter));
+  if (dateFilter) {
+    records = records.filter(r => r.timestamp?.startsWith(dateFilter));
+  } else if (monthFilter) {
+    records = records.filter(r => r.timestamp?.startsWith(monthFilter));
+  }
   if (auditWarehouseFilter) records = records.filter(r => r.warehouseId === auditWarehouseFilter);
   if (auditSearchFilter) {
     const q = auditSearchFilter.toLowerCase();
@@ -1380,7 +1396,20 @@ function renderAuditTable() {
   `).join('');
 }
 
-document.getElementById('audit-date-picker').addEventListener('change', renderAuditTable);
+document.getElementById('audit-date-picker').addEventListener('change', () => {
+  document.getElementById('audit-month-picker').value = '';
+  renderAuditTable();
+});
+document.getElementById('audit-month-picker').addEventListener('change', () => {
+  document.getElementById('audit-date-picker').value = '';
+  renderAuditTable();
+});
+document.getElementById('btn-audit-today').addEventListener('click', () => {
+  const today = new Date().toISOString().slice(0,10);
+  document.getElementById('audit-date-picker').value = today;
+  document.getElementById('audit-month-picker').value = '';
+  renderAuditTable();
+});
 document.getElementById('audit-search').addEventListener('input', (e) => {
   auditSearchFilter = e.target.value;
   renderAuditTable();
