@@ -836,13 +836,27 @@
       <!-- MIS REGISTROS (Historial Personal) -->
       <div class="section-header" style="margin-top:16px;">
         <span class="section-title">Mi Historial de Conteo</span>
+      </div>
+
+      <div class="card" style="margin-bottom:12px; padding:12px;">
+        <div class="flex-row" style="gap:8px; margin-bottom:12px;">
+          <div style="flex:1;">
+            <label class="form-label" style="font-size:9px;">Filtrar por Día</label>
+            <input type="date" id="hist-date-picker" class="form-input" style="padding:8px; font-size:12px;" />
+          </div>
+          <div style="flex:1;">
+            <label class="form-label" style="font-size:9px;">Filtrar por Mes</label>
+            <input type="month" id="hist-month-picker" class="form-input" style="padding:8px; font-size:12px;" />
+          </div>
+        </div>
         <div class="flex-row" style="gap:8px;">
-          <button class="btn btn-sm btn-ghost active" id="btn-hist-day">Día</button>
-          <button class="btn btn-sm btn-ghost" id="btn-hist-month">Mes</button>
+          <button class="btn btn-sm btn-ghost active" id="btn-hist-day" style="flex:1;">Hoy</button>
+          <button class="btn btn-sm btn-ghost" id="btn-hist-month" style="flex:1;">Este Mes</button>
         </div>
       </div>
+
       <div class="card" style="padding:0; overflow:hidden;">
-        <div id="personal-history-list" style="max-height:400px; overflow-y:auto;">
+        <div id="personal-history-list" style="max-height:350px; overflow-y:auto;">
           <!-- Items del historial -->
         </div>
       </div>
@@ -1717,27 +1731,40 @@ function renderProfileScreen() {
 }
 
 let personalHistView = 'day';
-function renderPersonalHistory(view) {
+function renderPersonalHistory(view, specificValue = null) {
   personalHistView = view;
   const list = document.getElementById('personal-history-list');
   const u = State.currentUser;
+  if (!u) return;
+
   const today = new Date().toISOString().slice(0,10);
-  const monthPrefix = today.substring(0, 7);
+  const curMonth = today.substring(0, 7);
 
   const btnDay = document.getElementById('btn-hist-day');
   const btnMonth = document.getElementById('btn-hist-month');
-  if(btnDay) btnDay.classList.toggle('active', view==='day');
-  if(btnMonth) btnMonth.classList.toggle('active', view==='month');
+  const datePicker = document.getElementById('hist-date-picker');
+  const monthPicker = document.getElementById('hist-month-picker');
 
-  let records = State.records.filter(r => r.userId === u.id);
+  // Reset actives
+  if(btnDay) btnDay.classList.remove('active');
+  if(btnMonth) btnMonth.classList.remove('active');
+
+  let filterStr = "";
   if (view === 'day') {
-    records = records.filter(r => r.timestamp?.startsWith(today));
-  } else {
-    records = records.filter(r => r.timestamp?.startsWith(monthPrefix));
+    filterStr = specificValue || today;
+    if (btnDay && filterStr === today) btnDay.classList.add('active');
+    if (datePicker && !specificValue) datePicker.value = today;
+  } else if (view === 'month') {
+    filterStr = specificValue || curMonth;
+    if (btnMonth && filterStr === curMonth) btnMonth.classList.add('active');
+    if (monthPicker && !specificValue) monthPicker.value = curMonth;
   }
 
+  let records = State.records.filter(r => r.userId === u.id);
+  records = records.filter(r => r.timestamp?.startsWith(filterStr));
+
   if (!records.length) {
-    list.innerHTML = `<div style="padding:32px;text-align:center;color:var(--text-muted);font-size:13px;">No hay registros para este ${view==='day'?'día':'mes'}</div>`;
+    list.innerHTML = `<div style="padding:32px;text-align:center;color:var(--text-muted);font-size:13px;">No hay registros para ${view==='day'?'el día':'el mes'} seleccionado (${filterStr})</div>`;
     return;
   }
 
@@ -1767,8 +1794,27 @@ function renderPersonalHistory(view) {
 setTimeout(() => {
   const bDay = document.getElementById('btn-hist-day');
   const bMonth = document.getElementById('btn-hist-month');
-  if(bDay) bDay.addEventListener('click', () => renderPersonalHistory('day'));
-  if(bMonth) bMonth.addEventListener('click', () => renderPersonalHistory('month'));
+  const dPick = document.getElementById('hist-date-picker');
+  const mPick = document.getElementById('hist-month-picker');
+
+  if(bDay) bDay.addEventListener('click', () => {
+    const today = new Date().toISOString().slice(0,10);
+    if(dPick) dPick.value = today;
+    renderPersonalHistory('day', today);
+  });
+  if(bMonth) bMonth.addEventListener('click', () => {
+    const curMonth = new Date().toISOString().slice(0,7);
+    if(mPick) mPick.value = curMonth;
+    renderPersonalHistory('month', curMonth);
+  });
+  if(dPick) dPick.addEventListener('change', (e) => {
+    if(mPick) mPick.value = '';
+    renderPersonalHistory('day', e.target.value);
+  });
+  if(mPick) mPick.addEventListener('change', (e) => {
+    if(dPick) dPick.value = '';
+    renderPersonalHistory('month', e.target.value);
+  });
 }, 500);
 
 function updateProfileExtra(u, myRecs) {
