@@ -1711,8 +1711,8 @@ function renderProfileScreen() {
 
   document.getElementById('profile-today').textContent = myRecs.filter(r => r.timestamp?.startsWith(today)).length;
   document.getElementById('profile-week').textContent  = myRecs.filter(r => r.timestamp?.startsWith(monthPrefix)).length;
-  document.getElementById('profile-total').textContent = myRecs.length;
 
+  updateProfileExtra(u, myRecs);
   renderPersonalHistory('day');
 }
 
@@ -1770,14 +1770,21 @@ setTimeout(() => {
   if(bDay) bDay.addEventListener('click', () => renderPersonalHistory('day'));
   if(bMonth) bMonth.addEventListener('click', () => renderPersonalHistory('month'));
 }, 500);
-  document.getElementById('profile-total').textContent = myRecs.length;
 
-  document.getElementById('session-info').innerHTML = `
-    <div>🆔 ID: <strong style="color:var(--accent);font-family:var(--mono)">${u.id}</strong></div>
-    <div>🕐 Sesión iniciada: <strong>${formatDatetime(new Date().toISOString())}</strong></div>
-    <div>📡 Estado: <strong style="color:${State.isOnline?'var(--success)':'var(--warn)'}">${State.isOnline?'En línea':'Sin conexión'}</strong></div>
-    <div>💾 Pendientes offline: <strong style="color:${State.pendingItems.length?'var(--warn)':'var(--text-dim)'}">${State.pendingItems.length}</strong></div>
-  `;
+function updateProfileExtra(u, myRecs) {
+  const elTotal = document.getElementById('profile-total');
+  if (elTotal) elTotal.textContent = myRecs.length;
+
+  const elSession = document.getElementById('session-info');
+  if (elSession) {
+    elSession.innerHTML = `
+      <div>🆔 ID: <strong style="color:var(--accent);font-family:var(--mono)">${u.id}</strong></div>
+      <div>🕐 Sesión iniciada: <strong>${formatDatetime(new Date().toISOString())}</strong></div>
+      <div>📡 Estado: <strong style="color:${State.isOnline?'var(--success)':'var(--warn)'}">${State.isOnline?'En línea':'Sin conexión'}</strong></div>
+      <div>💾 Pendientes offline: <strong style="color:${State.pendingItems.length?'var(--warn)':'var(--text-dim)'}">${State.pendingItems.length}</strong></div>
+    `;
+  }
+}
 }
 
 // ── DATE HELPERS ──────────────────────────────────────
