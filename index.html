@@ -832,6 +832,21 @@
           </div>
         </div>
       </div>
+
+      <!-- MIS REGISTROS (Historial Personal) -->
+      <div class="section-header" style="margin-top:16px;">
+        <span class="section-title">Mi Historial de Conteo</span>
+        <div class="flex-row" style="gap:8px;">
+          <button class="btn btn-sm btn-ghost active" id="btn-hist-day">Día</button>
+          <button class="btn btn-sm btn-ghost" id="btn-hist-month">Mes</button>
+        </div>
+      </div>
+      <div class="card" style="padding:0; overflow:hidden;">
+        <div id="personal-history-list" style="max-height:400px; overflow-y:auto;">
+          <!-- Items del historial -->
+        </div>
+      </div>
+
       <div class="card">
         <div style="font-family:var(--mono);font-size:11px;color:var(--text-muted);margin-bottom:12px;letter-spacing:1px;">SESIÓN ACTIVA</div>
         <div id="session-info" style="font-size:12px;color:var(--text-dim);line-height:2;"></div>
@@ -1691,13 +1706,70 @@ function renderProfileScreen() {
   document.getElementById('profile-role-text').textContent = u.role === 'admin' ? '👑 Administrador' : '🔧 Operador';
 
   const today = new Date().toISOString().slice(0,10);
-  const weekAgo = new Date(Date.now()-7*86400000).toISOString().slice(0,10);
+  const monthPrefix = today.substring(0, 7);
   const myRecs = State.records.filter(r => r.userId === u.id);
-  const todayRecs = myRecs.filter(r => r.timestamp?.startsWith(today));
-  const weekRecs  = myRecs.filter(r => r.timestamp?.slice(0,10) >= weekAgo);
 
-  document.getElementById('profile-today').textContent = todayRecs.length;
-  document.getElementById('profile-week').textContent  = weekRecs.length;
+  document.getElementById('profile-today').textContent = myRecs.filter(r => r.timestamp?.startsWith(today)).length;
+  document.getElementById('profile-week').textContent  = myRecs.filter(r => r.timestamp?.startsWith(monthPrefix)).length;
+  document.getElementById('profile-total').textContent = myRecs.length;
+
+  renderPersonalHistory('day');
+}
+
+let personalHistView = 'day';
+function renderPersonalHistory(view) {
+  personalHistView = view;
+  const list = document.getElementById('personal-history-list');
+  const u = State.currentUser;
+  const today = new Date().toISOString().slice(0,10);
+  const monthPrefix = today.substring(0, 7);
+
+  const btnDay = document.getElementById('btn-hist-day');
+  const btnMonth = document.getElementById('btn-hist-month');
+  if(btnDay) btnDay.classList.toggle('active', view==='day');
+  if(btnMonth) btnMonth.classList.toggle('active', view==='month');
+
+  let records = State.records.filter(r => r.userId === u.id);
+  if (view === 'day') {
+    records = records.filter(r => r.timestamp?.startsWith(today));
+  } else {
+    records = records.filter(r => r.timestamp?.startsWith(monthPrefix));
+  }
+
+  if (!records.length) {
+    list.innerHTML = `<div style="padding:32px;text-align:center;color:var(--text-muted);font-size:13px;">No hay registros para este ${view==='day'?'día':'mes'}</div>`;
+    return;
+  }
+
+  // Agrupar por producto para mostrar resumen
+  const summary = {};
+  records.forEach(r => {
+    const key = r.productCode + (r.unit || '');
+    if (!summary[key]) summary[key] = { code: r.productCode, name: r.productName, qty: 0, unit: r.unit, last: r.timestamp };
+    summary[key].qty += Number(r.qty);
+  });
+
+  list.innerHTML = Object.values(summary).sort((a,b)=>new Date(b.last)-new Date(a.last)).map(data => `
+    <div style="padding:12px 16px; border-bottom:1px solid var(--border); display:flex; justify-content:space-between; align-items:center;">
+      <div>
+        <div style="font-size:13px; font-weight:600; color:var(--text);">${data.name}</div>
+        <div style="font-size:11px; color:var(--text-muted); font-family:var(--mono);">${data.code}</div>
+      </div>
+      <div style="text-align:right;">
+        <div style="font-size:14px; font-weight:700; color:var(--accent);">${data.qty} <span style="font-size:10px;">${data.unit}</span></div>
+        <div style="font-size:10px; color:var(--text-dim);">${formatTime(data.last)}</div>
+      </div>
+    </div>
+  `).join('');
+}
+
+// Agregar listeners después de que las funciones existan
+setTimeout(() => {
+  const bDay = document.getElementById('btn-hist-day');
+  const bMonth = document.getElementById('btn-hist-month');
+  if(bDay) bDay.addEventListener('click', () => renderPersonalHistory('day'));
+  if(bMonth) bMonth.addEventListener('click', () => renderPersonalHistory('month'));
+}, 500);
   document.getElementById('profile-total').textContent = myRecs.length;
 
   document.getElementById('session-info').innerHTML = `
